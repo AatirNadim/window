@@ -1,0 +1,24 @@
+{
+  "name": "window-server",
+  "version": "1.0.0",
+  "description": "WebSocket signaling server for Window WebRTC app",
+  "main": "index.ts",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "uuid": "^11.1.0",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/uuid": "^10.0.0",
+    "@types/webrtc": "^0.0.46",
+    "@types/ws": "^8.5.13",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  }
+}
