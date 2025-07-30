@@ -9,12 +9,18 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as LayoutRouteImport } from './routes/layout'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TestIndexRouteImport } from './routes/test/index'
 import { Route as Route1IndexRouteImport } from './routes/route1/index'
 import { Route as TestAatirRouteImport } from './routes/test/$aatir'
 import { Route as Route1AnotherRouteRouteImport } from './routes/route1/anotherRoute'
 
+const LayoutRoute = LayoutRouteImport.update({
+  id: '/layout',
+  path: '/layout',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -43,6 +49,7 @@ const Route1AnotherRouteRoute = Route1AnotherRouteRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/layout': typeof LayoutRoute
   '/route1/anotherRoute': typeof Route1AnotherRouteRoute
   '/test/$aatir': typeof TestAatirRoute
   '/route1': typeof Route1IndexRoute
@@ -50,6 +57,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/layout': typeof LayoutRoute
   '/route1/anotherRoute': typeof Route1AnotherRouteRoute
   '/test/$aatir': typeof TestAatirRoute
   '/route1': typeof Route1IndexRoute
@@ -58,6 +66,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/layout': typeof LayoutRoute
   '/route1/anotherRoute': typeof Route1AnotherRouteRoute
   '/test/$aatir': typeof TestAatirRoute
   '/route1/': typeof Route1IndexRoute
@@ -65,12 +74,25 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/route1/anotherRoute' | '/test/$aatir' | '/route1' | '/test'
+  fullPaths:
+    | '/'
+    | '/layout'
+    | '/route1/anotherRoute'
+    | '/test/$aatir'
+    | '/route1'
+    | '/test'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/route1/anotherRoute' | '/test/$aatir' | '/route1' | '/test'
+  to:
+    | '/'
+    | '/layout'
+    | '/route1/anotherRoute'
+    | '/test/$aatir'
+    | '/route1'
+    | '/test'
   id:
     | '__root__'
     | '/'
+    | '/layout'
     | '/route1/anotherRoute'
     | '/test/$aatir'
     | '/route1/'
@@ -79,6 +101,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  LayoutRoute: typeof LayoutRoute
   Route1AnotherRouteRoute: typeof Route1AnotherRouteRoute
   TestAatirRoute: typeof TestAatirRoute
   Route1IndexRoute: typeof Route1IndexRoute
@@ -87,6 +110,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/layout': {
+      id: '/layout'
+      path: '/layout'
+      fullPath: '/layout'
+      preLoaderRoute: typeof LayoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -127,6 +157,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  LayoutRoute: LayoutRoute,
   Route1AnotherRouteRoute: Route1AnotherRouteRoute,
   TestAatirRoute: TestAatirRoute,
   Route1IndexRoute: Route1IndexRoute,
