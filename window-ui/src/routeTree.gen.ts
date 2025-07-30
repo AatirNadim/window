@@ -10,33 +10,79 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as TestIndexRouteImport } from './routes/test/index'
+import { Route as Route1IndexRouteImport } from './routes/route1/index'
+import { Route as TestAatirRouteImport } from './routes/test/$aatir'
+import { Route as Route1AnotherRouteRouteImport } from './routes/route1/anotherRoute'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TestIndexRoute = TestIndexRouteImport.update({
+  id: '/test/',
+  path: '/test/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const Route1IndexRoute = Route1IndexRouteImport.update({
+  id: '/route1/',
+  path: '/route1/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TestAatirRoute = TestAatirRouteImport.update({
+  id: '/test/$aatir',
+  path: '/test/$aatir',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const Route1AnotherRouteRoute = Route1AnotherRouteRouteImport.update({
+  id: '/route1/anotherRoute',
+  path: '/route1/anotherRoute',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/route1/anotherRoute': typeof Route1AnotherRouteRoute
+  '/test/$aatir': typeof TestAatirRoute
+  '/route1': typeof Route1IndexRoute
+  '/test': typeof TestIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/route1/anotherRoute': typeof Route1AnotherRouteRoute
+  '/test/$aatir': typeof TestAatirRoute
+  '/route1': typeof Route1IndexRoute
+  '/test': typeof TestIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/route1/anotherRoute': typeof Route1AnotherRouteRoute
+  '/test/$aatir': typeof TestAatirRoute
+  '/route1/': typeof Route1IndexRoute
+  '/test/': typeof TestIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/route1/anotherRoute' | '/test/$aatir' | '/route1' | '/test'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/route1/anotherRoute' | '/test/$aatir' | '/route1' | '/test'
+  id:
+    | '__root__'
+    | '/'
+    | '/route1/anotherRoute'
+    | '/test/$aatir'
+    | '/route1/'
+    | '/test/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  Route1AnotherRouteRoute: typeof Route1AnotherRouteRoute
+  TestAatirRoute: typeof TestAatirRoute
+  Route1IndexRoute: typeof Route1IndexRoute
+  TestIndexRoute: typeof TestIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +94,43 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/test/': {
+      id: '/test/'
+      path: '/test'
+      fullPath: '/test'
+      preLoaderRoute: typeof TestIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/route1/': {
+      id: '/route1/'
+      path: '/route1'
+      fullPath: '/route1'
+      preLoaderRoute: typeof Route1IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/test/$aatir': {
+      id: '/test/$aatir'
+      path: '/test/$aatir'
+      fullPath: '/test/$aatir'
+      preLoaderRoute: typeof TestAatirRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/route1/anotherRoute': {
+      id: '/route1/anotherRoute'
+      path: '/route1/anotherRoute'
+      fullPath: '/route1/anotherRoute'
+      preLoaderRoute: typeof Route1AnotherRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  Route1AnotherRouteRoute: Route1AnotherRouteRoute,
+  TestAatirRoute: TestAatirRoute,
+  Route1IndexRoute: Route1IndexRoute,
+  TestIndexRoute: TestIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
