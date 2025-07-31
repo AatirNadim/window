@@ -15,7 +15,7 @@ import {
   User,
 } from 'lucide-react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import type { JoinRoomMessage } from '@/types'
+import type { JoinRoomMessage, WebSocketMessage } from '@/types'
 import { useUserStore } from '@/store'
 import {
   Card,
@@ -43,6 +43,12 @@ const ICE_SERVERS = {
 }
 
 const CHUNK_SIZE = 64 * 1024 // 64 KB chunk size
+
+const serverPort = process.env.NEXT_PUBLIC_SERVER_PORT || '8080'
+
+const serverPath = `${
+  process.env.NEXT_PUBLIC_SERVER_PATH || 'localhost'
+}:${serverPort}`
 
 export default function Room() {
   const navigate = useNavigate()
@@ -83,7 +89,9 @@ export default function Room() {
     // 1. Initialize WebSocket connection
 
     // console.log('room id --> ', roomId)
-    const socket = new WebSocket(SIGNALING_SERVER_URL)
+
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
+    const socket = new WebSocket(`${wsProtocol}://${serverPath}`)
     socketRef.current = socket
 
     socket.onopen = () => {
@@ -91,7 +99,6 @@ export default function Room() {
       // Join the room automatically with user info
       socket.send(
         JSON.stringify({
-          type: 'join-room',
           roomId: roomId,
           userId: userId, // sending user details as well
           userName: userName,
@@ -127,46 +134,44 @@ export default function Room() {
     }
   }, [roomId, userId, userName, leaveRoom])
 
-  const handleSignalingMessage = async (message: any) => {
+  const handleSignalingMessage = async (message: WebSocketMessage) => {
     switch (message.type) {
       case 'user-joined':
-        if (message.error) {
-          toast.error('Failed to join room', {
-            description: message.message,
-          })
-          navigate({ to: '/' })
-        } else {
-          setStatus('Waiting for another user...')
-        }
-        break
-
-      case 'other-user-joined':
-        toast.success('User Joined', {
-          description: 'Another user has joined the room.',
+        // const { userName } = message
+        toast.success('New User Joined', {
+          description: `A new user, ${message.username} joined the room.`,
         })
-        setStatus('Ready to connect. Creating offer...')
-        await createPeerConnection(true)
+        // setStatus('Waiting for another user...')
         break
 
-      case 'webrtc-offer':
-        setStatus('Receiving offer. Creating answer...')
-        await createPeerConnection(false)
-        await handleOffer(message.offer)
+      case 'offer':
+        // setStatus('Receiving offer. Creating answer...')
+        // await createPeerConnection(false)
+        // await handleOffer(message.offer)
         break
 
-      case 'webrtc-answer':
-        await handleAnswer(message.answer)
+      case 'answer':
+        // await handleAnswer(message.answer)
         break
 
-      case 'webrtc-ice-candidate':
-        await handleIceCandidate(message.candidate)
+      case 'ice-candidate':
+        // await handleIceCandidate(message.candidate)
         break
 
-      case 'other-user-left':
+      case 'leave-room':
         toast.error('User Left', {
           description: 'The other user has left the room.',
         })
         setStatus('Waiting for another user...')
+        setIsConnected(false)
+        resetConnection()
+        break
+
+      case 'error':
+        toast.error('Error', {
+          description: message.message || 'An error occurred',
+        })
+        setStatus('Connection failed')
         setIsConnected(false)
         resetConnection()
         break
