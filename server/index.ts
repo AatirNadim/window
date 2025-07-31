@@ -20,6 +20,7 @@ const PORT = Number(process.env.PORT) || 8080;
 interface ExtendedWebSocket extends WebSocket {
   userId?: string;
   roomId?: string;
+  userName?: string;
 }
 
 // // In-memory storage (use Redis in production)

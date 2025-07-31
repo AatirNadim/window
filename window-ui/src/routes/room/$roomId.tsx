@@ -15,7 +15,11 @@ import {
   User,
 } from 'lucide-react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import type { JoinRoomMessage, WebSocketMessage } from '@/types'
+import type {
+  JoinRoomMessage,
+  LeaveRoomMessage,
+  WebSocketMessage,
+} from '@/types'
 import { useUserStore } from '@/store'
 import {
   Card,
@@ -32,8 +36,6 @@ export const Route = createFileRoute('/room/$roomId')({
   component: Room,
 })
 
-const SIGNALING_SERVER_URL = 'ws://localhost:8080'
-
 // Using public STUN servers. For production, you might need a TURN server.
 const ICE_SERVERS = {
   iceServers: [
@@ -43,12 +45,6 @@ const ICE_SERVERS = {
 }
 
 const CHUNK_SIZE = 64 * 1024 // 64 KB chunk size
-
-const serverPort = process.env.NEXT_PUBLIC_SERVER_PORT || '8080'
-
-const serverPath = `${
-  process.env.NEXT_PUBLIC_SERVER_PATH || 'localhost'
-}:${serverPort}`
 
 export default function Room() {
   const navigate = useNavigate()
@@ -74,6 +70,12 @@ export default function Room() {
   }>({ name: '', url: null })
   const [dragOver, setDragOver] = useState(false)
 
+  const serverPort: string = import.meta.env.VITE_SERVER_PORT || '8080'
+
+  const serverPath = `${
+    import.meta.env.VITE_SERVER_PATH || 'localhost'
+  }:${serverPort}`
+
   // Refs for receiving file data
   const receivedChunksRef = useRef<Array<ArrayBuffer>>([])
   const receivedFileInfoRef = useRef<{
@@ -82,59 +84,86 @@ export default function Room() {
     size: number
   } | null>(null)
 
-  useEffect(() => {
-    // Initialize user and join room
-    initializeUser()
+  const createWSConnection = () => {
+    try {
+      const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
+      const socket = new WebSocket(`${wsProtocol}://${serverPath}`)
+      socketRef.current = socket
 
-    // 1. Initialize WebSocket connection
+      socket.onopen = () => {
+        setStatus('Joining room...')
 
-    // console.log('room id --> ', roomId)
-
-    const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
-    const socket = new WebSocket(`${wsProtocol}://${serverPath}`)
-    socketRef.current = socket
-
-    socket.onopen = () => {
-      setStatus('Joining room...')
-      // Join the room automatically with user info
-      socket.send(
-        JSON.stringify({
+        const msg: JoinRoomMessage = {
+          type: 'join-room',
           roomId: roomId,
-          userId: userId, // sending user details as well
-          userName: userName,
-        } as JoinRoomMessage),
-      )
-    }
+          userId: userId || 'temp_user_id',
+          userName: userName || 'temp_user_name',
+        }
 
-    socket.onmessage = (event) => {
-      const message = JSON.parse(event.data)
-      handleSignalingMessage(message)
-    }
+        console.log('Joining room with message: ', msg)
+        // Join the room automatically with user info
+        socket.send(JSON.stringify(msg))
+      }
 
-    socket.onclose = () => {
-      setStatus('Disconnected from server')
-      setIsConnected(false)
-    }
+      socket.onmessage = (event) => {
+        const message = JSON.parse(event.data)
+        handleSignalingMessage(message)
+      }
 
-    socket.onerror = () => {
+      socket.onclose = () => {
+        setStatus('Disconnected from server')
+        setIsConnected(false)
+      }
+
+      socket.onerror = () => {
+        toast.error('Connection Error', {
+          description: 'Failed to connect to signaling server',
+        })
+        setStatus('Connection failed')
+      }
+    } catch (error) {
+      console.error('Error creating WebSocket connection:', error)
       toast.error('Connection Error', {
         description: 'Failed to connect to signaling server',
       })
       setStatus('Connection failed')
     }
+  }
 
-    // Cleanup on component unmount
+  useEffect(() => {
+    initializeUser()
+
+    console.log('user details generated --> ', userId, userName)
+    createWSConnection()
+    window.addEventListener('beforeunload', cleanUp)
+
     return () => {
-      socket.close()
+      // Leave room and clear userId when navigating away
+      window.removeEventListener('beforeunload', cleanUp)
+      cleanUp()
+    }
+  }, [roomId])
+
+  const cleanUp = () => {
+    try {
       if (peerConnectionRef.current) {
         peerConnectionRef.current.close()
       }
-      // Leave room and clear userId when navigating away
-      leaveRoom()
+      socketRef.current?.send(
+        JSON.stringify({
+          type: 'leave-room',
+          roomId: roomId,
+          userId: userId,
+        } as LeaveRoomMessage),
+      )
+      socketRef.current?.close()
+    } catch (error) {
+      console.error('Error cleaning up WebSocket connection:', error)
     }
-  }, [roomId, userId, userName, leaveRoom])
+  }
 
   const handleSignalingMessage = async (message: WebSocketMessage) => {
+    console.debug('Received signaling message: ', message)
     switch (message.type) {
       case 'user-joined':
         // const { userName } = message
@@ -493,7 +522,7 @@ export default function Room() {
                       leaveRoom()
                       navigate({ to: '/' })
                     }}
-                    className="bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border-white/20 hover:bg-white/70 dark:hover:bg-gray-700/70"
+                    className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-white/30 dark:border-gray-600/30 hover:bg-white/90 dark:hover:bg-gray-700/90 text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white transition-all duration-200 shadow-sm hover:shadow-md"
                   >
                     <ArrowLeft className="w-4 h-4 mr-2" />
                     Leave

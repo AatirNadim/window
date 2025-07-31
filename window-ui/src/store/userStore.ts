@@ -69,6 +69,8 @@ export const useUserStore = create<UserState>()(
 
         // Only generate new user if doesn't exist
         if (!state.userId || !state.userName) {
+          console.log('user details not found, generating new user...')
+
           set({
             userId: uuidv4(),
             userName: generateRandomUsername(),
@@ -86,7 +88,7 @@ export const useUserStore = create<UserState>()(
             userName: generateRandomUsername(),
             // currentRoomId: roomId,
           })
-        } 
+        }
         // else {
         //   set({
         //     // currentRoomId: roomId,
@@ -99,6 +101,7 @@ export const useUserStore = create<UserState>()(
           // currentRoomId: null,
           // Clear userId when leaving room as requested
           userId: null,
+          userName: null,
         })
         // Note: userName persists even after leaving room
       },
@@ -114,10 +117,10 @@ export const useUserStore = create<UserState>()(
       name: 'window-user-storage',
       storage: createJSONStorage(() => localStorage),
       // Only persist userName, userId and currentRoomId will be regenerated
-      partialize: (state) => ({
-        userName: state.userName,
-        // Don't persist userId or currentRoomId as they should be session-specific
-      }),
+      // partialize: (state) => ({
+      //   userName: state.userName,
+      //   // Don't persist userId or currentRoomId as they should be session-specific
+      // }),
     },
   ),
 )
