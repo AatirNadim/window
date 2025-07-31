@@ -7,8 +7,8 @@ import { routeTree } from './routeTree.gen'
 
 import './styles.css'
 
-
-import "@fontsource/inter";
+// @ts-expect-error
+import '@fontsource/inter'
 import reportWebVitals from './reportWebVitals.ts'
 import { ThemeProvider } from './components/theme-provider.tsx'
 

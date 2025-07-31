@@ -1,23 +1,3 @@
-// import express from "express";
-
-// const app = express();
-// const PORT = process.env.PORT || 3000;
-
-// app.get("/", (req, res) => {
-//   res.send("WebSocket signaling server is running");
-// });
-
-// app.listen(PORT, () => {
-//   console.log(`Server is running on http://localhost:${PORT}`);
-// });
-
-// // export default app;
-// // export { app, PORT };
-// // export type { Express } from 'express';
-// // export { express };
-// // export { default as WebSocket } from 'ws';
-// // export { v4 as uuidv4 } from 'uuid';
-
 import { WebSocketServer, WebSocket } from "ws";
 
 import {
@@ -74,6 +54,7 @@ wss.on("connection", (ws: ExtendedWebSocket) => {
 });
 
 const handleMessage = (ws: ExtendedWebSocket, message: WebSocketMessage) => {
+  console.debug("Handling websocket message from client:", message);
   try {
     switch (message.type) {
       case "join-room":
@@ -141,6 +122,8 @@ const joinRoom = (ws: ExtendedWebSocket, message: JoinRoomMessage) => {
   }
 
   rooms.set(roomId, room);
+
+  console.log(`User ${userId} joined room ${roomId}`);
 
   broadcastToRoom(roomId, {
     roomId,

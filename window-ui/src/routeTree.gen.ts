@@ -9,18 +9,13 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as LayoutRouteImport } from './routes/layout'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TestIndexRouteImport } from './routes/test/index'
 import { Route as Route1IndexRouteImport } from './routes/route1/index'
 import { Route as TestAatirRouteImport } from './routes/test/$aatir'
 import { Route as Route1AnotherRouteRouteImport } from './routes/route1/anotherRoute'
+import { Route as RoomRoomIdRouteImport } from './routes/room/$roomId'
 
-const LayoutRoute = LayoutRouteImport.update({
-  id: '/layout',
-  path: '/layout',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -46,10 +41,15 @@ const Route1AnotherRouteRoute = Route1AnotherRouteRouteImport.update({
   path: '/route1/anotherRoute',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RoomRoomIdRoute = RoomRoomIdRouteImport.update({
+  id: '/room/$roomId',
+  path: '/room/$roomId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/layout': typeof LayoutRoute
+  '/room/$roomId': typeof RoomRoomIdRoute
   '/route1/anotherRoute': typeof Route1AnotherRouteRoute
   '/test/$aatir': typeof TestAatirRoute
   '/route1': typeof Route1IndexRoute
@@ -57,7 +57,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/layout': typeof LayoutRoute
+  '/room/$roomId': typeof RoomRoomIdRoute
   '/route1/anotherRoute': typeof Route1AnotherRouteRoute
   '/test/$aatir': typeof TestAatirRoute
   '/route1': typeof Route1IndexRoute
@@ -66,7 +66,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/layout': typeof LayoutRoute
+  '/room/$roomId': typeof RoomRoomIdRoute
   '/route1/anotherRoute': typeof Route1AnotherRouteRoute
   '/test/$aatir': typeof TestAatirRoute
   '/route1/': typeof Route1IndexRoute
@@ -76,7 +76,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/layout'
+    | '/room/$roomId'
     | '/route1/anotherRoute'
     | '/test/$aatir'
     | '/route1'
@@ -84,7 +84,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/layout'
+    | '/room/$roomId'
     | '/route1/anotherRoute'
     | '/test/$aatir'
     | '/route1'
@@ -92,7 +92,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
-    | '/layout'
+    | '/room/$roomId'
     | '/route1/anotherRoute'
     | '/test/$aatir'
     | '/route1/'
@@ -101,7 +101,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  LayoutRoute: typeof LayoutRoute
+  RoomRoomIdRoute: typeof RoomRoomIdRoute
   Route1AnotherRouteRoute: typeof Route1AnotherRouteRoute
   TestAatirRoute: typeof TestAatirRoute
   Route1IndexRoute: typeof Route1IndexRoute
@@ -110,13 +110,6 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/layout': {
-      id: '/layout'
-      path: '/layout'
-      fullPath: '/layout'
-      preLoaderRoute: typeof LayoutRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
@@ -152,12 +145,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Route1AnotherRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/room/$roomId': {
+      id: '/room/$roomId'
+      path: '/room/$roomId'
+      fullPath: '/room/$roomId'
+      preLoaderRoute: typeof RoomRoomIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  LayoutRoute: LayoutRoute,
+  RoomRoomIdRoute: RoomRoomIdRoute,
   Route1AnotherRouteRoute: Route1AnotherRouteRoute,
   TestAatirRoute: TestAatirRoute,
   Route1IndexRoute: Route1IndexRoute,

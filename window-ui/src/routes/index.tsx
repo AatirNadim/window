@@ -1,6 +1,5 @@
-'use client'
-
-import { createFileRoute } from '@tanstack/react-router'
+import { v4 as uuidv4 } from 'uuid'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { toast } from 'sonner'
@@ -15,6 +14,7 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { useUserStore } from '@/store'
 
 export const Route = createFileRoute('/')({
   component: Home,
@@ -23,10 +23,21 @@ export const Route = createFileRoute('/')({
 export default function Home() {
   const [roomId, setRoomId] = useState('')
 
+  const navigate = useNavigate()
+  const { initializeUser } = useUserStore()
+
   const handleCreateRoom = () => {
-    // TODO: Implement WebSocket room creation
+    // Initialize user before creating room
+    initializeUser()
+
+    const newRoomId = uuidv4()
+    setRoomId(newRoomId)
+
+    // navigate to the new room
+    navigate({ to: `/room/${newRoomId}` })
+
     toast.success('Room Created!', {
-      description: 'Your room ID is: ABC123',
+      description: `Your room ID is: ${newRoomId}`,
     })
   }
 
@@ -82,7 +93,7 @@ export default function Home() {
       </div>
 
       {/* Main content */}
-      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4">
+      <div className="relative z-5 flex flex-col items-center justify-center min-h-screen px-4">
         {/* Header section */}
         <motion.div
           className="text-center mb-12"

@@ -1,0 +1,123 @@
+import { create } from 'zustand'
+import { persist, createJSONStorage } from 'zustand/middleware'
+import { v4 as uuidv4 } from 'uuid'
+
+interface UserState {
+  userId: string | null
+  userName: string | null
+  // currentRoomId: string | null
+
+  // Actions
+  initializeUser: () => void
+  joinRoom: (roomId: string) => void
+  leaveRoom: () => void
+  clearUser: () => void
+}
+
+export type { UserState }
+
+const generateRandomUsername = (): string => {
+  const adjectives = [
+    'Swift',
+    'Bright',
+    'Cool',
+    'Fast',
+    'Smart',
+    'Bold',
+    'Calm',
+    'Keen',
+    'Quick',
+    'Sharp',
+    'Wise',
+    'Brave',
+    'Clear',
+    'Fresh',
+  ]
+  const nouns = [
+    'Fox',
+    'Eagle',
+    'Wolf',
+    'Tiger',
+    'Lion',
+    'Bear',
+    'Hawk',
+    'Owl',
+    'Shark',
+    'Falcon',
+    'Raven',
+    'Phoenix',
+    'Dragon',
+    'Panther',
+  ]
+
+  const adjective = adjectives[Math.floor(Math.random() * adjectives.length)]
+  const noun = nouns[Math.floor(Math.random() * nouns.length)]
+  const number = Math.floor(Math.random() * 1000)
+
+  return `${adjective}${noun}${number}`
+}
+
+export const useUserStore = create<UserState>()(
+  persist(
+    (set, get) => ({
+      userId: null,
+      userName: null,
+      currentRoomId: null,
+
+      initializeUser: () => {
+        const state = get()
+
+        // Only generate new user if doesn't exist
+        if (!state.userId || !state.userName) {
+          set({
+            userId: uuidv4(),
+            userName: generateRandomUsername(),
+          })
+        }
+      },
+
+      joinRoom: (roomId: string) => {
+        const state = get()
+
+        // Initialize user if not already done
+        if (!state.userId || !state.userName) {
+          set({
+            userId: uuidv4(),
+            userName: generateRandomUsername(),
+            // currentRoomId: roomId,
+          })
+        } 
+        // else {
+        //   set({
+        //     // currentRoomId: roomId,
+        //   })
+        // }
+      },
+
+      leaveRoom: () => {
+        set({
+          // currentRoomId: null,
+          // Clear userId when leaving room as requested
+          userId: null,
+        })
+        // Note: userName persists even after leaving room
+      },
+
+      clearUser: () => {
+        set({
+          userId: null,
+          userName: null,
+        })
+      },
+    }),
+    {
+      name: 'window-user-storage',
+      storage: createJSONStorage(() => localStorage),
+      // Only persist userName, userId and currentRoomId will be regenerated
+      partialize: (state) => ({
+        userName: state.userName,
+        // Don't persist userId or currentRoomId as they should be session-specific
+      }),
+    },
+  ),
+)
