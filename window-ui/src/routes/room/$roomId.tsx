@@ -16,8 +16,11 @@ import {
 } from 'lucide-react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import type {
+  AnswerMessage,
+  IceCandidateMessage,
   JoinRoomMessage,
   LeaveRoomMessage,
+  OfferMessage,
   WebSocketMessage,
 } from '@/types'
 import { useUserStore } from '@/store'
@@ -55,11 +58,16 @@ export default function Room() {
 
   // Refs for core WebRTC objects
   const socketRef = useRef<WebSocket | null>(null)
-  const peerConnectionRef = useRef<RTCPeerConnection | null>(null)
+  const peerConnections = useRef<Record<string, RTCPeerConnection>>({})
   const dataChannelRef = useRef<RTCDataChannel | null>(null)
 
   // State management
   const [status, setStatus] = useState('Connecting to room...')
+
+  const [connectionStatus, setConnectionStatus] = useState<
+    'connecting' | 'connected' | 'disconnected'
+  >('connecting')
+
   const [isConnected, setIsConnected] = useState(false)
   const [file, setFile] = useState<File | null>(null)
   const [isSending, setIsSending] = useState(false)
@@ -86,6 +94,11 @@ export default function Room() {
 
   const createWSConnection = () => {
     try {
+      if (!userId || !userName) {
+        console.error('User ID or Name is not initialized')
+        return
+      }
+
       const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
       const socket = new WebSocket(`${wsProtocol}://${serverPath}`)
       socketRef.current = socket
@@ -96,8 +109,8 @@ export default function Room() {
         const msg: JoinRoomMessage = {
           type: 'join-room',
           roomId: roomId,
-          userId: userId || 'temp_user_id',
-          userName: userName || 'temp_user_name',
+          userId: userId,
+          userName: userName,
         }
 
         console.log('Joining room with message: ', msg)
@@ -134,6 +147,15 @@ export default function Room() {
     initializeUser()
 
     console.log('user details generated --> ', userId, userName)
+
+    if (!userId || !userName) {
+      toast.error('User Initialization Failed', {
+        description:
+          'Failed to initialize user details. Please refresh the page.',
+      })
+      return
+    }
+
     createWSConnection()
     window.addEventListener('beforeunload', cleanUp)
 
@@ -142,13 +164,11 @@ export default function Room() {
       window.removeEventListener('beforeunload', cleanUp)
       cleanUp()
     }
-  }, [roomId])
+  }, [roomId, userId])
 
   const cleanUp = () => {
     try {
-      if (peerConnectionRef.current) {
-        peerConnectionRef.current.close()
-      }
+      Object.values(peerConnections.current).forEach((pc) => pc.close())
       socketRef.current?.send(
         JSON.stringify({
           type: 'leave-room',
@@ -165,26 +185,29 @@ export default function Room() {
   const handleSignalingMessage = async (message: WebSocketMessage) => {
     console.debug('Received signaling message: ', message)
     switch (message.type) {
-      case 'user-joined':
-        // const { userName } = message
+      case 'join-room':
+        createPeerConnection(message.userId)
+
+        await createOffer(message.userId)
+
         toast.success('New User Joined', {
-          description: `A new user, ${message.username} joined the room.`,
+          description: `A new user, ${message.userName}, with ID ${message.userId} joined the room.`,
         })
-        // setStatus('Waiting for another user...')
+
+        setStatus('A user has joined the room')
         break
 
       case 'offer':
-        // setStatus('Receiving offer. Creating answer...')
-        // await createPeerConnection(false)
-        // await handleOffer(message.offer)
+        await handleOffer(message)
+
         break
 
       case 'answer':
-        // await handleAnswer(message.answer)
+        await handleAnswer(message)
         break
 
       case 'ice-candidate':
-        // await handleIceCandidate(message.candidate)
+        await handleIceCandidate(message)
         break
 
       case 'leave-room':
@@ -207,18 +230,58 @@ export default function Room() {
     }
   }
 
-  const createPeerConnection = async (isInitiator: boolean) => {
-    const pc = new RTCPeerConnection(ICE_SERVERS)
+  const sendWsMessage = (message: WebSocketMessage) => {
+    try {
+      if (socketRef.current?.readyState === WebSocket.OPEN) {
+        socketRef.current.send(JSON.stringify(message))
+      } else {
+        console.error('WebSocket is not open. Cannot send message.')
+      }
+    } catch (error) {
+      console.error('Error sending WebSocket message:', error)
+    }
+  }
+
+  const createPeerConnection = (remoteUserId: string) => {
+    console.debug('Creating new RTCPeerConnection...')
+
+    if (!userId || !userName) {
+      toast.error('User not initialized', {
+        description: 'Please refresh the page to initialize user details.',
+      })
+      console.error('User ID or Name is not initialized')
+      setStatus('User not initialized')
+      return
+    }
+
+    const pc = new RTCPeerConnection({
+      iceServers: [
+        {
+          urls: [
+            'stun:stun.l.google.com:19302',
+            'stun:stun1.l.google.com:19302',
+            'stun:stun2.l.google.com:19302',
+          ],
+        },
+      ],
+      iceCandidatePoolSize: 10,
+    })
 
     pc.onicecandidate = (event) => {
       if (event.candidate && socketRef.current) {
-        socketRef.current.send(
-          JSON.stringify({
-            type: 'webrtc-ice-candidate',
-            candidate: event.candidate,
-            roomId: roomId,
-          }),
+        console.debug(
+          'Sending ICE candidate:',
+          event.candidate,
+          'to remote user:',
+          remoteUserId,
         )
+        sendWsMessage({
+          type: 'ice-candidate',
+          roomId,
+          fromUserId: userId,
+          toUserId: remoteUserId,
+          candidate: event.candidate,
+        })
       }
     }
 
@@ -228,70 +291,192 @@ export default function Room() {
       setupDataChannel(channel)
     }
 
-    peerConnectionRef.current = pc
+    pc.onconnectionstatechange = () => {
+      console.debug(
+        `Connection state with remote user ${remoteUserId} changed: ${pc.connectionState}`,
+      )
 
-    if (isInitiator) {
-      // The joining user (initiator) creates the data channel and the offer
-      const dc = pc.createDataChannel('file-transfer')
-      setupDataChannel(dc)
-      dataChannelRef.current = dc
+      if (
+        pc.connectionState === 'disconnected' ||
+        pc.connectionState === 'failed'
+      ) {
+        console.warn(
+          `Connection with remote user ${remoteUserId} lost. Attempting to reconnect...`,
+        )
+
+        // setRemoteStreams((prev) => {
+        //   prev[remoteUserId]?.getTracks().forEach((track) => track.stop());
+        //   delete prev[remoteUserId];
+        //   return { ...prev };
+        // });
+      }
+
+      setConnectionStatus(
+        pc.connectionState as 'connecting' | 'connected' | 'disconnected',
+      )
+    }
+
+    peerConnections.current[remoteUserId] = pc
+
+    // if (isInitiator) {
+    //   // The joining user (initiator) creates the data channel and the offer
+    //   const dc = pc.createDataChannel('file-transfer')
+    //   setupDataChannel(dc)
+    //   dataChannelRef.current = dc
+
+    //   const offer = await pc.createOffer()
+    //   await pc.setLocalDescription(offer)
+
+    //   if (socketRef.current) {
+    //     socketRef.current.send(
+    //       JSON.stringify({
+    //         type: 'webrtc-offer',
+    //         offer: offer,
+    //         roomId: roomId,
+    //       }),
+    //     )
+    //   }
+    // }
+  }
+
+  const createOffer = async (remoteUserId: string) => {
+    try {
+      if (!userId || !userName) {
+        throw new Error('User not initialized')
+      }
+
+      if (!peerConnections.current[remoteUserId]) {
+        throw new Error(`Peer connection not found for user: ${remoteUserId}`)
+      }
+
+      const pc = peerConnections.current[remoteUserId]
+
+      console.debug('Creating offer for remote user:', remoteUserId)
 
       const offer = await pc.createOffer()
+
+      console.debug('Setting local description with offer:', offer)
+
       await pc.setLocalDescription(offer)
 
-      if (socketRef.current) {
-        socketRef.current.send(
-          JSON.stringify({
-            type: 'webrtc-offer',
-            offer: offer,
-            roomId: roomId,
-          }),
-        )
-      }
+      sendWsMessage({
+        type: 'offer',
+        fromUserId: userId,
+        toUserId: remoteUserId,
+        offer,
+        roomId,
+      })
+      console.debug('Offer sent to remote user:', remoteUserId)
+    } catch (error) {
+      console.error('Error creating offer:', error)
+      toast.error('Offer Creation Failed', {
+        description: 'Failed to create WebRTC offer.',
+      })
+      setStatus('Offer creation failed')
     }
   }
 
-  const handleOffer = async (offer: RTCSessionDescriptionInit) => {
-    if (peerConnectionRef.current) {
-      await peerConnectionRef.current.setRemoteDescription(
-        new RTCSessionDescription(offer),
-      )
-      const answer = await peerConnectionRef.current.createAnswer()
-      await peerConnectionRef.current.setLocalDescription(answer)
-
-      if (socketRef.current) {
-        socketRef.current.send(
-          JSON.stringify({
-            type: 'webrtc-answer',
-            answer: answer,
-            roomId: roomId,
-          }),
-        )
+  const handleOffer = async (msg: OfferMessage) => {
+    try {
+      if (!userId) {
+        throw new Error('User not initialized')
       }
+
+      const { fromUserId, offer } = msg
+
+      if (!peerConnections.current[fromUserId]) {
+        throw new Error(`Peer connection not found for user: ${fromUserId}`)
+      }
+
+      const pc = peerConnections.current[fromUserId]
+
+      console.debug('Handling offer from remote user:', fromUserId)
+      console.debug('Received offer:', offer)
+
+      await pc.setRemoteDescription(new RTCSessionDescription(offer))
+
+      console.debug('Remote description set with offer:', offer)
+
+      // Create an answer to send back
+      const answer = await pc.createAnswer()
+      await pc.setLocalDescription(answer)
+      console.debug('Created answer:', answer)
+
+      sendWsMessage({
+        type: 'answer',
+        roomId,
+        fromUserId: userId,
+        toUserId: fromUserId,
+        answer,
+      })
+    } catch (error) {
+      console.error('Error handling offer:', error)
+      toast.error('Offer Handling Failed', {
+        description: 'Failed to handle WebRTC offer.',
+      })
+      setStatus('Offer handling failed')
     }
   }
 
-  const handleAnswer = async (answer: RTCSessionDescriptionInit) => {
-    if (peerConnectionRef.current) {
-      await peerConnectionRef.current.setRemoteDescription(
-        new RTCSessionDescription(answer),
-      )
-      setStatus('Connection established! Ready to share.')
+  const handleAnswer = async (msg: AnswerMessage) => {
+    try {
+      if (!peerConnections.current[msg.fromUserId]) {
+        throw new Error(`Peer connection not found for user: ${msg.fromUserId}`)
+      }
+
+      const pc = peerConnections.current[msg.fromUserId]
+
+      console.debug('Handling answer from remote user:', msg.fromUserId)
+
+      console.debug('Received answer:', msg.answer)
+
+      await pc.setRemoteDescription(new RTCSessionDescription(msg.answer))
+
+      console.debug('Remote description set with answer:', msg.answer)
       setIsConnected(true)
+    } catch (error) {
+      console.error('Error handling answer:', error)
+      toast.error('Answer Handling Failed', {
+        description: 'Failed to handle WebRTC answer.',
+      })
+      setStatus('Answer handling failed')
     }
   }
 
-  const handleIceCandidate = async (candidate: RTCIceCandidateInit) => {
-    if (peerConnectionRef.current) {
-      await peerConnectionRef.current.addIceCandidate(
-        new RTCIceCandidate(candidate),
-      )
+  const handleIceCandidate = async (msg: IceCandidateMessage) => {
+    try {
+      if (!peerConnections.current[msg.fromUserId]) {
+        throw new Error(`Peer connection not found for user: ${msg.fromUserId}`)
+      }
+
+      const pc = peerConnections.current[msg.fromUserId]
+
+      if (!pc.remoteDescription) {
+        console.warn('Remote description not set yet, waiting for offer/answer')
+        return
+      }
+
+      console.debug('Handling ICE candidate from remote user:', msg.fromUserId)
+
+      console.debug('Received ICE candidate:', msg.candidate)
+
+      await pc.addIceCandidate(new RTCIceCandidate(msg.candidate))
+
+      console.debug('ICE candidate added to peer connection:', msg.candidate)
+    } catch (error) {
+      console.error('Error handling ICE candidate:', error)
+      toast.error('ICE Candidate Handling Failed', {
+        description: 'Failed to handle WebRTC ICE candidate.',
+      })
+      setStatus('ICE candidate handling failed')
     }
   }
 
   const resetConnection = () => {
-    peerConnectionRef.current?.close()
-    peerConnectionRef.current = null
+    Object.values(peerConnections.current).forEach((pc) => {
+      pc.close()
+    })
+    peerConnections.current = {}
     dataChannelRef.current = null
     setFile(null)
     setIsSending(false)
