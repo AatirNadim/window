@@ -39,14 +39,6 @@ export const Route = createFileRoute('/room/$roomId')({
   component: Room,
 })
 
-// Using public STUN servers. For production, you might need a TURN server.
-const ICE_SERVERS = {
-  iceServers: [
-    { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' },
-  ],
-}
-
 const CHUNK_SIZE = 64 * 1024 // 64 KB chunk size
 
 export default function Room() {
