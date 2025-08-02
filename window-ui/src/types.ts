@@ -75,7 +75,7 @@ export interface UserJoinedMessage {
   type: 'user-joined'
   roomId: string
   userId: string
-  username?: string
+  userName?: string
 }
 
 export interface UserLeftMessage {

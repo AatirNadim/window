@@ -2,7 +2,7 @@
 
 // WebRTC type definitions
 interface RTCSessionDescriptionInit {
-  type: 'offer' | 'answer' | 'pranswer' | 'rollback';
+  type: "offer" | "answer" | "pranswer" | "rollback";
   sdp: string;
 }
 
@@ -75,6 +75,7 @@ export interface UserJoinedMessage {
   type: "user-joined";
   roomId: string;
   userId: string;
+  userName?: string;
 }
 
 export interface UserLeftMessage {

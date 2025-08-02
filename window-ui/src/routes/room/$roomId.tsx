@@ -100,9 +100,9 @@ export default function Room() {
 
         const msg: JoinRoomMessage = {
           type: 'join-room',
-          roomId: roomId,
-          userId: userId,
-          userName: userName,
+          roomId,
+          userId,
+          userName,
         }
 
         console.log('Joining room with message: ', msg)
@@ -148,6 +148,8 @@ export default function Room() {
       return
     }
 
+    console.debug('creating socket connection for room:', roomId)
+
     createWSConnection()
     window.addEventListener('beforeunload', cleanUp)
 
@@ -157,6 +159,14 @@ export default function Room() {
       cleanUp()
     }
   }, [roomId, userId])
+
+  useEffect(() => {
+    console.debug(
+      '\n\nPeer connections updated:',
+      peerConnections.current,
+      '\n\n',
+    )
+  }, [peerConnections.current])
 
   const cleanUp = () => {
     try {
@@ -177,7 +187,7 @@ export default function Room() {
   const handleSignalingMessage = async (message: WebSocketMessage) => {
     console.debug('Received signaling message: ', message)
     switch (message.type) {
-      case 'join-room':
+      case 'user-joined':
         createPeerConnection(message.userId)
 
         await createOffer(message.userId)
@@ -235,100 +245,112 @@ export default function Room() {
   }
 
   const createPeerConnection = (remoteUserId: string) => {
-    console.debug('Creating new RTCPeerConnection...')
-
-    if (!userId || !userName) {
-      toast.error('User not initialized', {
-        description: 'Please refresh the page to initialize user details.',
-      })
-      console.error('User ID or Name is not initialized')
-      setStatus('User not initialized')
-      return
-    }
-
-    const pc = new RTCPeerConnection({
-      iceServers: [
-        {
-          urls: [
-            'stun:stun.l.google.com:19302',
-            'stun:stun1.l.google.com:19302',
-            'stun:stun2.l.google.com:19302',
-          ],
-        },
-      ],
-      iceCandidatePoolSize: 10,
-    })
-
-    pc.onicecandidate = (event) => {
-      if (event.candidate && socketRef.current) {
-        console.debug(
-          'Sending ICE candidate:',
-          event.candidate,
-          'to remote user:',
-          remoteUserId,
-        )
-        sendWsMessage({
-          type: 'ice-candidate',
-          roomId,
-          fromUserId: userId,
-          toUserId: remoteUserId,
-          candidate: event.candidate,
-        })
-      }
-    }
-
-    pc.ondatachannel = (event) => {
-      const channel = event.channel
-      dataChannelRef.current = channel
-      setupDataChannel(channel)
-    }
-
-    pc.onconnectionstatechange = () => {
+    try {
       console.debug(
-        `Connection state with remote user ${remoteUserId} changed: ${pc.connectionState}`,
+        'Creating new RTCPeerConnection with remote user ID:',
+        remoteUserId,
       )
 
-      if (
-        pc.connectionState === 'disconnected' ||
-        pc.connectionState === 'failed'
-      ) {
-        console.warn(
-          `Connection with remote user ${remoteUserId} lost. Attempting to reconnect...`,
-        )
-
-        // setRemoteStreams((prev) => {
-        //   prev[remoteUserId]?.getTracks().forEach((track) => track.stop());
-        //   delete prev[remoteUserId];
-        //   return { ...prev };
-        // });
+      if (!userId || !userName) {
+        throw new Error('User not initialized')
       }
 
-      setConnectionStatus(
-        pc.connectionState as 'connecting' | 'connected' | 'disconnected',
+      const pc = new RTCPeerConnection({
+        iceServers: [
+          {
+            urls: [
+              'stun:stun.l.google.com:19302',
+              'stun:stun1.l.google.com:19302',
+              'stun:stun2.l.google.com:19302',
+            ],
+          },
+        ],
+        iceCandidatePoolSize: 10,
+      })
+
+      // registering peer connection event handlers
+
+      pc.onicecandidate = (event) => {
+        console.log(
+          'sending ice candidate for user:',
+          remoteUserId,
+          event.candidate,
+          socketRef.current,
+        )
+
+        if (event.candidate && socketRef.current) {
+          console.debug(
+            'Sending ICE candidate:',
+            event.candidate,
+            'to remote user:',
+            remoteUserId,
+          )
+          sendWsMessage({
+            type: 'ice-candidate',
+            roomId,
+            fromUserId: userId,
+            toUserId: remoteUserId,
+            candidate: event.candidate,
+          })
+        }
+      }
+
+      // Add after pc.onconnectionstatechange
+      pc.oniceconnectionstatechange = () => {
+        console.debug(
+          `ICE connection state with ${remoteUserId}: ${pc.iceConnectionState}`,
+        )
+
+        if (pc.iceConnectionState === 'failed') {
+          console.error('ICE connection failed, attempting restart')
+          pc.restartIce()
+        }
+      }
+
+      pc.onicegatheringstatechange = () => {
+        console.debug(
+          `ICE gathering state with ${remoteUserId}: ${pc.iceGatheringState}`,
+        )
+      }
+
+      pc.ondatachannel = (event) => {
+        const channel = event.channel
+        dataChannelRef.current = channel
+        setupDataChannel(channel)
+      }
+
+      pc.onconnectionstatechange = () => {
+        console.debug(
+          `Connection state with remote user ${remoteUserId} changed: ${pc.connectionState}`,
+        )
+
+        if (
+          pc.connectionState === 'disconnected' ||
+          pc.connectionState === 'failed'
+        ) {
+          console.warn(
+            `Connection with remote user ${remoteUserId} lost. Attempting to reconnect...`,
+          )
+        }
+
+        setConnectionStatus(
+          pc.connectionState as 'connecting' | 'connected' | 'disconnected',
+        )
+      }
+
+      peerConnections.current[remoteUserId] = pc
+
+      console.info(
+        'new peer connection created and added to records for user:',
+        remoteUserId,
       )
+    } catch (error) {
+      console.error('Error creating peer connection:', error)
+      toast.error('Peer Connection Failed', {
+        description: 'Failed to create WebRTC peer connection.',
+      })
+      setStatus('Peer connection failed')
     }
-
-    peerConnections.current[remoteUserId] = pc
-
-    // if (isInitiator) {
-    //   // The joining user (initiator) creates the data channel and the offer
-    //   const dc = pc.createDataChannel('file-transfer')
-    //   setupDataChannel(dc)
-    //   dataChannelRef.current = dc
-
-    //   const offer = await pc.createOffer()
-    //   await pc.setLocalDescription(offer)
-
-    //   if (socketRef.current) {
-    //     socketRef.current.send(
-    //       JSON.stringify({
-    //         type: 'webrtc-offer',
-    //         offer: offer,
-    //         roomId: roomId,
-    //       }),
-    //     )
-    //   }
-    // }
   }
 
   const createOffer = async (remoteUserId: string) => {
@@ -342,6 +364,19 @@ export default function Room() {
       }
 
       const pc = peerConnections.current[remoteUserId]
+
+      // setting up data channel for file transfer
+
+      console.debug(
+        'Creating data channel for file transfer with remote user:',
+        remoteUserId,
+      )
+
+      const dataChannel = pc.createDataChannel('fileTransfer', {
+        ordered: true,
+      })
+      dataChannelRef.current = dataChannel
+      setupDataChannel(dataChannel)
 
       console.debug('Creating offer for remote user:', remoteUserId)
 
@@ -375,12 +410,13 @@ export default function Room() {
       }
 
       const { fromUserId, offer } = msg
+      let pc = peerConnections.current[fromUserId]
 
-      if (!peerConnections.current[fromUserId]) {
-        throw new Error(`Peer connection not found for user: ${fromUserId}`)
+      // creating peer connection for the first time with the existing client, when they send an offer
+      if (!pc) {
+        createPeerConnection(fromUserId)
+        pc = peerConnections.current[fromUserId]
       }
-
-      const pc = peerConnections.current[fromUserId]
 
       console.debug('Handling offer from remote user:', fromUserId)
       console.debug('Received offer:', offer)

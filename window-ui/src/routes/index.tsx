@@ -43,7 +43,8 @@ export default function Home() {
 
   const handleJoinRoom = () => {
     if (roomId.trim()) {
-      // TODO: Implement WebSocket room joining
+      navigate({ to: `/room/${roomId}` })
+
       toast.success('Joining room...', {
         description: `Connecting to room: ${roomId}`,
       })
