@@ -12,7 +12,6 @@ export function ThemeToggle() {
       variant="outline"
       size="icon"
       onClick={() => {
-        console.log('Toggling theme:', theme)
         setTheme(theme === 'light' ? 'dark' : 'light')
       }}
       className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-white/20 hover:bg-white/90 dark:hover:bg-gray-800/90 transition-all duration-200"

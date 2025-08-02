@@ -130,6 +130,7 @@ const joinRoom = (ws: ExtendedWebSocket, message: JoinRoomMessage) => {
     roomId,
     type: "user-joined",
     userId,
+    userName
   } as UserJoinedMessage);
 };
 

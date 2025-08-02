@@ -15,7 +15,7 @@ interface RTCIceCandidateInit {
 
 export interface User {
   id: string
-  name?: string
+  name: string
 }
 
 export interface Room {
@@ -38,7 +38,7 @@ export interface JoinRoomMessage {
   type: 'join-room'
   roomId: string
   userId: string
-  userName?: string
+  userName: string
 }
 
 export interface LeaveRoomMessage {
@@ -51,6 +51,7 @@ export interface OfferMessage {
   type: 'offer'
   roomId: string
   fromUserId: string
+  fromUserName: string
   toUserId: string
   offer: RTCSessionDescriptionInit
 }
@@ -75,7 +76,7 @@ export interface UserJoinedMessage {
   type: 'user-joined'
   roomId: string
   userId: string
-  userName?: string
+  userName: string
 }
 
 export interface UserLeftMessage {

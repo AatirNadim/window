@@ -13,6 +13,7 @@ import {
   Clock,
   Users,
   User,
+  Copy,
 } from 'lucide-react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import type {
@@ -21,6 +22,8 @@ import type {
   JoinRoomMessage,
   LeaveRoomMessage,
   OfferMessage,
+  UserJoinedMessage,
+  UserLeftMessage,
   WebSocketMessage,
 } from '@/types'
 import { useUserStore } from '@/store'
@@ -47,6 +50,8 @@ export default function Room() {
 
   // Zustand store
   const { userId, userName, initializeUser, leaveRoom } = useUserStore()
+
+  const userRecord = useRef<Record<string, string>>({})
 
   // Refs for core WebRTC objects
   const socketRef = useRef<WebSocket | null>(null)
@@ -174,11 +179,12 @@ export default function Room() {
       socketRef.current?.send(
         JSON.stringify({
           type: 'leave-room',
-          roomId: roomId,
-          userId: userId,
+          roomId,
+          userId,
         } as LeaveRoomMessage),
       )
       socketRef.current?.close()
+      leaveRoom()
     } catch (error) {
       console.error('Error cleaning up WebSocket connection:', error)
     }
@@ -188,7 +194,7 @@ export default function Room() {
     console.debug('Received signaling message: ', message)
     switch (message.type) {
       case 'user-joined':
-        createPeerConnection(message.userId)
+        createPeerConnection(message.userId, message.userName)
 
         await createOffer(message.userId)
 
@@ -212,13 +218,12 @@ export default function Room() {
         await handleIceCandidate(message)
         break
 
-      case 'leave-room':
+      case 'user-left':
+        handleRemoteUserLeft(message)
+
         toast.error('User Left', {
           description: 'The other user has left the room.',
         })
-        setStatus('Waiting for another user...')
-        setIsConnected(false)
-        resetConnection()
         break
 
       case 'error':
@@ -227,7 +232,7 @@ export default function Room() {
         })
         setStatus('Connection failed')
         setIsConnected(false)
-        resetConnection()
+        // resetConnection()
         break
     }
   }
@@ -244,11 +249,15 @@ export default function Room() {
     }
   }
 
-  const createPeerConnection = (remoteUserId: string) => {
+  const createPeerConnection = (
+    remoteUserId: string,
+    remoteUserName: string,
+  ) => {
     try {
       console.debug(
         'Creating new RTCPeerConnection with remote user ID:',
         remoteUserId,
+        remoteUserName,
       )
 
       if (!userId || !userName) {
@@ -296,6 +305,43 @@ export default function Room() {
       }
 
       // Add after pc.onconnectionstatechange
+
+      pc.onconnectionstatechange = () => {
+        switch (pc.connectionState) {
+          case 'connected':
+            if (userRecord.current[remoteUserId]) return
+            console.debug(
+              `Connection established with remote user ${remoteUserId}`,
+            )
+            userRecord.current[remoteUserId] = remoteUserName
+            setIsConnected(true)
+            setStatus('Connected to remote user')
+            break
+          case 'disconnected':
+          case 'failed':
+            console.warn(
+              `Connection with remote user ${remoteUserId} lost. Attempting to reconnect...`,
+            )
+            setConnectionStatus('connecting')
+            if (userRecord.current[remoteUserId]) {
+              delete userRecord.current[remoteUserId]
+            }
+            setStatus(`Reconnecting to ${remoteUserId}...`)
+            break
+          case 'closed':
+            console.warn(`Connection with remote user ${remoteUserId} closed.`)
+            setIsConnected(false)
+            setStatus('Connection closed')
+
+            userRecord.current = {}
+            break
+          default:
+            console.debug(
+              `Unhandled behaviour: Connection state with remote user ${remoteUserId}: ${pc.connectionState}`,
+            )
+        }
+      }
+
       pc.oniceconnectionstatechange = () => {
         console.debug(
           `ICE connection state with ${remoteUserId}: ${pc.iceConnectionState}`,
@@ -331,6 +377,8 @@ export default function Room() {
           console.warn(
             `Connection with remote user ${remoteUserId} lost. Attempting to reconnect...`,
           )
+          setConnectionStatus('connecting')
+          // setStatus(`Reconnecting to ${remoteUserId}...`)
         }
 
         setConnectionStatus(
@@ -414,7 +462,7 @@ export default function Room() {
 
       // creating peer connection for the first time with the existing client, when they send an offer
       if (!pc) {
-        createPeerConnection(fromUserId)
+        createPeerConnection(msg.fromUserId, msg.fromUserName)
         pc = peerConnections.current[fromUserId]
       }
 
@@ -493,23 +541,44 @@ export default function Room() {
       console.debug('ICE candidate added to peer connection:', msg.candidate)
     } catch (error) {
       console.error('Error handling ICE candidate:', error)
-      toast.error('ICE Candidate Handling Failed', {
-        description: 'Failed to handle WebRTC ICE candidate.',
-      })
+      // toast.error('ICE Candidate Handling Failed', {
+      //   description: 'Failed to handle WebRTC ICE candidate.',
+      // })
       setStatus('ICE candidate handling failed')
     }
   }
 
-  const resetConnection = () => {
-    Object.values(peerConnections.current).forEach((pc) => {
-      pc.close()
-    })
-    peerConnections.current = {}
-    dataChannelRef.current = null
-    setFile(null)
-    setIsSending(false)
-    setTransferProgress(0)
+  const handleRemoteUserLeft = (msg: UserLeftMessage) => {
+    const remoteUserId = msg.userId
+    try {
+      peerConnections.current[remoteUserId]?.close()
+      delete peerConnections.current[remoteUserId]
+
+      console.debug(
+        `Remote user ${remoteUserId} has left the room. Peer connection closed.`,
+      )
+
+      toast.info('Remote User Left', {
+        description: `User with ID ${remoteUserId} has left the room.`,
+      })
+    } catch (error) {
+      console.error('Error handling remote user left:', error)
+      toast.error('Remote User Left', {
+        description: `User with ID ${remoteUserId} has left the room.`,
+      })
+    }
   }
+
+  // const resetConnection = () => {
+  //   Object.values(peerConnections.current).forEach((pc) => {
+  //     pc.close()
+  //   })
+  //   peerConnections.current = {}
+  //   dataChannelRef.current = null
+  //   setFile(null)
+  //   setIsSending(false)
+  //   setTransferProgress(0)
+  // }
 
   const setupDataChannel = (channel: RTCDataChannel) => {
     channel.onopen = () => {
@@ -667,7 +736,7 @@ export default function Room() {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
+    <div className="min-h-screen relative overflow-hidden min-w-lg">
       {/* Background with gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-blue-900/20 dark:to-purple-900/20" />
 
@@ -722,7 +791,26 @@ export default function Room() {
                       <Link className="w-5 h-5 text-white" />
                     </div>
                   </div>
-                  Room: {roomId}
+                  <span>Room: {roomId}</span>
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="pr-2"
+                  >
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(roomId)
+                        toast.success('Room ID Copied', {
+                          description: 'Room ID has been copied to clipboard',
+                        })
+                      }}
+                      className="h-8 px-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </Button>
+                  </motion.div>
                 </div>
                 <motion.div
                   whileHover={{ scale: 1.05 }}
@@ -732,7 +820,6 @@ export default function Room() {
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      leaveRoom()
                       navigate({ to: '/' })
                     }}
                     className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-white/30 dark:border-gray-600/30 hover:bg-white/90 dark:hover:bg-gray-700/90 text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white transition-all duration-200 shadow-sm hover:shadow-md"

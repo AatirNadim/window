@@ -11,6 +11,7 @@ import './styles.css'
 import '@fontsource/inter'
 import reportWebVitals from './reportWebVitals.ts'
 import { ThemeProvider } from './components/theme-provider.tsx'
+import { Toaster } from './components/ui/sonner.tsx'
 
 // Create a new router instance
 const router = createRouter({
@@ -37,6 +38,13 @@ if (rootElement && !rootElement.innerHTML) {
     // <StrictMode>
     <ThemeProvider>
       <RouterProvider router={router} />
+      <Toaster
+        closeButton={true}
+        position="top-right"
+        richColors={true}
+        duration={2000}
+        
+      />
     </ThemeProvider>,
     // </StrictMode>,
   )
