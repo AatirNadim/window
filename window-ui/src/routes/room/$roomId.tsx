@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
-import { toast } from 'sonner'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useEffect, useRef, useState } from "react"
+import { toast } from "sonner"
+import { motion, AnimatePresence } from "framer-motion"
 import {
   FileUp,
   Link,
@@ -14,8 +14,8 @@ import {
   Users,
   User,
   Copy,
-} from 'lucide-react'
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+} from "lucide-react"
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import type {
   AnswerMessage,
   IceCandidateMessage,
@@ -24,20 +24,20 @@ import type {
   OfferMessage,
   UserLeftMessage,
   WebSocketMessage,
-} from '@/types'
-import { useUserStore } from '@/store'
+} from "@/types"
+import { useUserStore } from "@/store"
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Progress } from '@/components/ui/progress'
-import { ThemeToggle } from '@/components/theme-toggle'
+} from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Progress } from "@/components/ui/progress"
+import { ThemeToggle } from "@/components/theme-toggle"
 
-export const Route = createFileRoute('/room/$roomId')({
+export const Route = createFileRoute("/room/$roomId")({
   component: Room,
 })
 
@@ -65,11 +65,11 @@ export default function Room() {
   const dataChannelRef = useRef<RTCDataChannel | null>(null)
 
   // State management
-  const [status, setStatus] = useState('Connecting to room...')
+  const [status, setStatus] = useState("Connecting to room...")
 
   const [connectionStatus, setConnectionStatus] = useState<
-    'connecting' | 'connected' | 'disconnected'
-  >('connecting')
+    "connecting" | "connected" | "disconnected"
+  >("connecting")
 
   const [isConnected, setIsConnected] = useState(false)
   const [file, setFile] = useState<File | null>(null)
@@ -78,13 +78,13 @@ export default function Room() {
   const [receivedFile, setReceivedFile] = useState<{
     name: string
     url: string | null
-  }>({ name: '', url: null })
+  }>({ name: "", url: null })
   const [dragOver, setDragOver] = useState(false)
 
-  const serverPort: string = import.meta.env.VITE_SERVER_PORT || '8080'
+  const serverPort: string = import.meta.env.VITE_SERVER_PORT || "8080"
 
   const serverPath = `${
-    import.meta.env.VITE_SERVER_PATH || 'localhost'
+    import.meta.env.VITE_SERVER_PATH || "localhost"
   }:${serverPort}`
 
   // Refs for receiving file data
@@ -98,25 +98,25 @@ export default function Room() {
   const createWSConnection = () => {
     try {
       if (!userId || !userName) {
-        console.error('User ID or Name is not initialized')
+        console.error("User ID or Name is not initialized")
         return
       }
 
-      const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
+      const wsProtocol = window.location.protocol === "https:" ? "wss" : "ws"
       const socket = new WebSocket(`${wsProtocol}://${serverPath}`)
       socketRef.current = socket
 
       socket.onopen = () => {
-        setStatus('Joining room...')
+        setStatus("Joining room...")
 
         const msg: JoinRoomMessage = {
-          type: 'join-room',
+          type: "join-room",
           roomId,
           userId,
           userName,
         }
 
-        console.log('Joining room with message: ', msg)
+        console.log("Joining room with message: ", msg)
         // Join the room automatically with user info
         socket.send(JSON.stringify(msg))
       }
@@ -127,59 +127,59 @@ export default function Room() {
       }
 
       socket.onclose = () => {
-        setStatus('Disconnected from server')
+        setStatus("Disconnected from server")
         setIsConnected(false)
       }
 
       socket.onerror = () => {
-        toast.error('Connection Error', {
-          description: 'Failed to connect to signaling server',
+        toast.error("Connection Error", {
+          description: "Failed to connect to signaling server",
         })
-        setStatus('Connection failed')
+        setStatus("Connection failed")
       }
     } catch (error) {
-      console.error('Error creating WebSocket connection:', error)
-      toast.error('Connection Error', {
-        description: 'Failed to connect to signaling server',
+      console.error("Error creating WebSocket connection:", error)
+      toast.error("Connection Error", {
+        description: "Failed to connect to signaling server",
       })
-      setStatus('Connection failed')
+      setStatus("Connection failed")
     }
   }
 
   useEffect(() => {
-    console.info('\n\nRemote users updated:', remoteUsers, '\n\n')
+    console.info("\n\nRemote users updated:", remoteUsers, "\n\n")
   }, [remoteUsers])
 
   useEffect(() => {
     initializeUser()
 
-    console.log('user details generated --> ', userId, userName)
+    console.log("user details generated --> ", userId, userName)
 
     if (!userId || !userName) {
-      toast.error('User Initialization Failed', {
+      toast.error("User Initialization Failed", {
         description:
-          'Failed to initialize user details. Please refresh the page.',
+          "Failed to initialize user details. Please refresh the page.",
       })
       return
     }
 
-    console.debug('creating socket connection for room:', roomId)
+    console.debug("creating socket connection for room:", roomId)
 
     createWSConnection()
-    window.addEventListener('beforeunload', cleanUp)
+    window.addEventListener("beforeunload", cleanUp)
 
     return () => {
       // Leave room and clear userId when navigating away
-      window.removeEventListener('beforeunload', cleanUp)
+      window.removeEventListener("beforeunload", cleanUp)
       cleanUp()
     }
   }, [roomId, userId])
 
   useEffect(() => {
     console.debug(
-      '\n\nPeer connections updated:',
+      "\n\nPeer connections updated:",
       peerConnections.current,
-      '\n\n',
+      "\n\n",
     )
   }, [peerConnections.current])
 
@@ -188,7 +188,7 @@ export default function Room() {
       Object.values(peerConnections.current).forEach((pc) => pc.close())
       socketRef.current?.send(
         JSON.stringify({
-          type: 'leave-room',
+          type: "leave-room",
           roomId,
           userId,
         } as LeaveRoomMessage),
@@ -197,51 +197,51 @@ export default function Room() {
       clearRemoteUsers()
       leaveRoom()
     } catch (error) {
-      console.error('Error cleaning up WebSocket connection:', error)
+      console.error("Error cleaning up WebSocket connection:", error)
     }
   }
 
   const handleSignalingMessage = async (message: WebSocketMessage) => {
-    console.debug('Received signaling message: ', message)
+    console.debug("Received signaling message: ", message)
     switch (message.type) {
-      case 'user-joined':
+      case "user-joined":
         createPeerConnection(message.userId, message.userName)
 
         await createOffer(message.userId)
 
-        toast.success('New User Joined', {
+        toast.success("New User Joined", {
           description: `A new user, ${message.userName}, with ID ${message.userId} joined the room.`,
         })
 
-        setStatus('A user has joined the room')
+        setStatus("A user has joined the room")
         break
 
-      case 'offer':
+      case "offer":
         await handleOffer(message)
 
         break
 
-      case 'answer':
+      case "answer":
         await handleAnswer(message)
         break
 
-      case 'ice-candidate':
+      case "ice-candidate":
         await handleIceCandidate(message)
         break
 
-      case 'user-left':
+      case "user-left":
         handleRemoteUserLeft(message)
 
-        toast.error('User Left', {
-          description: 'The other user has left the room.',
+        toast.error("User Left", {
+          description: "The other user has left the room.",
         })
         break
 
-      case 'error':
-        toast.error('Error', {
-          description: message.message || 'An error occurred',
+      case "error":
+        toast.error("Error", {
+          description: message.message || "An error occurred",
         })
-        setStatus('Connection failed')
+        setStatus("Connection failed")
         setIsConnected(false)
         // resetConnection()
         break
@@ -253,10 +253,10 @@ export default function Room() {
       if (socketRef.current?.readyState === WebSocket.OPEN) {
         socketRef.current.send(JSON.stringify(message))
       } else {
-        console.error('WebSocket is not open. Cannot send message.')
+        console.error("WebSocket is not open. Cannot send message.")
       }
     } catch (error) {
-      console.error('Error sending WebSocket message:', error)
+      console.error("Error sending WebSocket message:", error)
     }
   }
 
@@ -266,22 +266,22 @@ export default function Room() {
   ) => {
     try {
       console.debug(
-        'Creating new RTCPeerConnection with remote user ID:',
+        "Creating new RTCPeerConnection with remote user ID:",
         remoteUserId,
         remoteUserName,
       )
 
       if (!userId || !userName) {
-        throw new Error('User not initialized')
+        throw new Error("User not initialized")
       }
 
       const pc = new RTCPeerConnection({
         iceServers: [
           {
             urls: [
-              'stun:stun.l.google.com:19302',
-              'stun:stun1.l.google.com:19302',
-              'stun:stun2.l.google.com:19302',
+              "stun:stun.l.google.com:19302",
+              "stun:stun1.l.google.com:19302",
+              "stun:stun2.l.google.com:19302",
             ],
           },
         ],
@@ -292,7 +292,7 @@ export default function Room() {
 
       pc.onicecandidate = (event) => {
         console.log(
-          'sending ice candidate for user:',
+          "sending ice candidate for user:",
           remoteUserId,
           event.candidate,
           socketRef.current,
@@ -300,13 +300,13 @@ export default function Room() {
 
         if (event.candidate && socketRef.current) {
           console.debug(
-            'Sending ICE candidate:',
+            "Sending ICE candidate:",
             event.candidate,
-            'to remote user:',
+            "to remote user:",
             remoteUserId,
           )
           sendWsMessage({
-            type: 'ice-candidate',
+            type: "ice-candidate",
             roomId,
             fromUserId: userId,
             toUserId: remoteUserId,
@@ -319,28 +319,28 @@ export default function Room() {
 
       pc.onconnectionstatechange = () => {
         switch (pc.connectionState) {
-          case 'connected':
+          case "connected":
             if (remoteUsers[remoteUserId]) return
             console.debug(
               `Connection established with remote user ${remoteUserId}`,
             )
             addRemoteUser(remoteUserId, remoteUserName)
             setIsConnected(true)
-            setStatus('Connected to remote user')
+            setStatus("Connected to remote user")
             break
-          case 'disconnected':
-          case 'failed':
+          case "disconnected":
+          case "failed":
             console.warn(
               `Connection with remote user ${remoteUserId} lost. Attempting to reconnect...`,
             )
-            setConnectionStatus('connecting')
+            setConnectionStatus("connecting")
             removeRemoteUser(remoteUserId)
             setStatus(`Reconnecting to ${remoteUserId}...`)
             break
-          case 'closed':
+          case "closed":
             console.warn(`Connection with remote user ${remoteUserId} closed.`)
             setIsConnected(false)
-            setStatus('Connection closed')
+            setStatus("Connection closed")
 
             clearRemoteUsers()
             break
@@ -356,8 +356,8 @@ export default function Room() {
           `ICE connection state with ${remoteUserId}: ${pc.iceConnectionState}`,
         )
 
-        if (pc.iceConnectionState === 'failed') {
-          console.error('ICE connection failed, attempting restart')
+        if (pc.iceConnectionState === "failed") {
+          console.error("ICE connection failed, attempting restart")
           pc.restartIce()
         }
       }
@@ -380,40 +380,40 @@ export default function Room() {
         )
 
         if (
-          pc.connectionState === 'disconnected' ||
-          pc.connectionState === 'failed'
+          pc.connectionState === "disconnected" ||
+          pc.connectionState === "failed"
         ) {
           console.warn(
             `Connection with remote user ${remoteUserId} lost. Attempting to reconnect...`,
           )
-          setConnectionStatus('connecting')
+          setConnectionStatus("connecting")
           // setStatus(`Reconnecting to ${remoteUserId}...`)
         }
 
         setConnectionStatus(
-          pc.connectionState as 'connecting' | 'connected' | 'disconnected',
+          pc.connectionState as "connecting" | "connected" | "disconnected",
         )
       }
 
       peerConnections.current[remoteUserId] = pc
 
       console.info(
-        'new peer connection created and added to records for user:',
+        "new peer connection created and added to records for user:",
         remoteUserId,
       )
     } catch (error) {
-      console.error('Error creating peer connection:', error)
-      toast.error('Peer Connection Failed', {
-        description: 'Failed to create WebRTC peer connection.',
+      console.error("Error creating peer connection:", error)
+      toast.error("Peer Connection Failed", {
+        description: "Failed to create WebRTC peer connection.",
       })
-      setStatus('Peer connection failed')
+      setStatus("Peer connection failed")
     }
   }
 
   const createOffer = async (remoteUserId: string) => {
     try {
       if (!userId || !userName) {
-        throw new Error('User not initialized')
+        throw new Error("User not initialized")
       }
 
       if (!peerConnections.current[remoteUserId]) {
@@ -425,45 +425,45 @@ export default function Room() {
       // setting up data channel for file transfer
 
       console.debug(
-        'Creating data channel for file transfer with remote user:',
+        "Creating data channel for file transfer with remote user:",
         remoteUserId,
       )
 
-      const dataChannel = pc.createDataChannel('fileTransfer', {
+      const dataChannel = pc.createDataChannel("fileTransfer", {
         ordered: true,
       })
       dataChannelRef.current = dataChannel
       setupDataChannel(dataChannel)
 
-      console.debug('Creating offer for remote user:', remoteUserId)
+      console.debug("Creating offer for remote user:", remoteUserId)
 
       const offer = await pc.createOffer()
 
-      console.debug('Setting local description with offer:', offer)
+      console.debug("Setting local description with offer:", offer)
 
       await pc.setLocalDescription(offer)
 
       sendWsMessage({
-        type: 'offer',
+        type: "offer",
         fromUserId: userId,
         toUserId: remoteUserId,
         offer,
         roomId,
       })
-      console.debug('Offer sent to remote user:', remoteUserId)
+      console.debug("Offer sent to remote user:", remoteUserId)
     } catch (error) {
-      console.error('Error creating offer:', error)
-      toast.error('Offer Creation Failed', {
-        description: 'Failed to create WebRTC offer.',
+      console.error("Error creating offer:", error)
+      toast.error("Offer Creation Failed", {
+        description: "Failed to create WebRTC offer.",
       })
-      setStatus('Offer creation failed')
+      setStatus("Offer creation failed")
     }
   }
 
   const handleOffer = async (msg: OfferMessage) => {
     try {
       if (!userId) {
-        throw new Error('User not initialized')
+        throw new Error("User not initialized")
       }
 
       const { fromUserId, offer } = msg
@@ -475,31 +475,31 @@ export default function Room() {
         pc = peerConnections.current[fromUserId]
       }
 
-      console.debug('Handling offer from remote user:', fromUserId)
-      console.debug('Received offer:', offer)
+      console.debug("Handling offer from remote user:", fromUserId)
+      console.debug("Received offer:", offer)
 
       await pc.setRemoteDescription(new RTCSessionDescription(offer))
 
-      console.debug('Remote description set with offer:', offer)
+      console.debug("Remote description set with offer:", offer)
 
       // Create an answer to send back
       const answer = await pc.createAnswer()
       await pc.setLocalDescription(answer)
-      console.debug('Created answer:', answer)
+      console.debug("Created answer:", answer)
 
       sendWsMessage({
-        type: 'answer',
+        type: "answer",
         roomId,
         fromUserId: userId,
         toUserId: fromUserId,
         answer,
       })
     } catch (error) {
-      console.error('Error handling offer:', error)
-      toast.error('Offer Handling Failed', {
-        description: 'Failed to handle WebRTC offer.',
+      console.error("Error handling offer:", error)
+      toast.error("Offer Handling Failed", {
+        description: "Failed to handle WebRTC offer.",
       })
-      setStatus('Offer handling failed')
+      setStatus("Offer handling failed")
     }
   }
 
@@ -511,20 +511,20 @@ export default function Room() {
 
       const pc = peerConnections.current[msg.fromUserId]
 
-      console.debug('Handling answer from remote user:', msg.fromUserId)
+      console.debug("Handling answer from remote user:", msg.fromUserId)
 
-      console.debug('Received answer:', msg.answer)
+      console.debug("Received answer:", msg.answer)
 
       await pc.setRemoteDescription(new RTCSessionDescription(msg.answer))
 
-      console.debug('Remote description set with answer:', msg.answer)
+      console.debug("Remote description set with answer:", msg.answer)
       setIsConnected(true)
     } catch (error) {
-      console.error('Error handling answer:', error)
-      toast.error('Answer Handling Failed', {
-        description: 'Failed to handle WebRTC answer.',
+      console.error("Error handling answer:", error)
+      toast.error("Answer Handling Failed", {
+        description: "Failed to handle WebRTC answer.",
       })
-      setStatus('Answer handling failed')
+      setStatus("Answer handling failed")
     }
   }
 
@@ -537,23 +537,23 @@ export default function Room() {
       const pc = peerConnections.current[msg.fromUserId]
 
       if (!pc.remoteDescription) {
-        console.warn('Remote description not set yet, waiting for offer/answer')
+        console.warn("Remote description not set yet, waiting for offer/answer")
         return
       }
 
-      console.debug('Handling ICE candidate from remote user:', msg.fromUserId)
+      console.debug("Handling ICE candidate from remote user:", msg.fromUserId)
 
-      console.debug('Received ICE candidate:', msg.candidate)
+      console.debug("Received ICE candidate:", msg.candidate)
 
       await pc.addIceCandidate(new RTCIceCandidate(msg.candidate))
 
-      console.debug('ICE candidate added to peer connection:', msg.candidate)
+      console.debug("ICE candidate added to peer connection:", msg.candidate)
     } catch (error) {
-      console.error('Error handling ICE candidate:', error)
+      console.error("Error handling ICE candidate:", error)
       // toast.error('ICE Candidate Handling Failed', {
       //   description: 'Failed to handle WebRTC ICE candidate.',
       // })
-      setStatus('ICE candidate handling failed')
+      setStatus("ICE candidate handling failed")
     }
   }
 
@@ -567,12 +567,12 @@ export default function Room() {
         `Remote user ${remoteUserId} has left the room. Peer connection closed.`,
       )
 
-      toast.info('Remote User Left', {
+      toast.info("Remote User Left", {
         description: `User with ID ${remoteUserId} has left the room.`,
       })
     } catch (error) {
-      console.error('Error handling remote user left:', error)
-      toast.error('Remote User Left', {
+      console.error("Error handling remote user left:", error)
+      toast.error("Remote User Left", {
         description: `User with ID ${remoteUserId} has left the room.`,
       })
     }
@@ -591,12 +591,12 @@ export default function Room() {
 
   const setupDataChannel = (channel: RTCDataChannel) => {
     channel.onopen = () => {
-      setStatus('Connection established! Ready to share.')
+      setStatus("Connection established! Ready to share.")
       setIsConnected(true)
     }
 
     channel.onclose = () => {
-      setStatus('Connection closed.')
+      setStatus("Connection closed.")
       setIsConnected(false)
     }
 
@@ -626,10 +626,10 @@ export default function Room() {
     if (
       !file ||
       !dataChannelRef.current ||
-      dataChannelRef.current.readyState !== 'open'
+      dataChannelRef.current.readyState !== "open"
     ) {
-      toast.error('Cannot send file', {
-        description: 'No file selected or connection not ready.',
+      toast.error("Cannot send file", {
+        description: "No file selected or connection not ready.",
       })
       return
     }
@@ -644,7 +644,7 @@ export default function Room() {
       size: file.size,
     })
 
-    toast('Sending file...', {
+    toast("Sending file...", {
       description: `Sending ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`,
     })
 
@@ -663,7 +663,7 @@ export default function Room() {
         if (offset < file.size) {
           readSlice(offset)
         } else {
-          toast.success('File Sent', {
+          toast.success("File Sent", {
             description: `${file.name} has been sent successfully.`,
           })
           setIsSending(false)
@@ -683,12 +683,12 @@ export default function Room() {
   // --- File Receiving Logic ---
   const handleReceiveMessage = (data: any) => {
     // If data is a string, it's metadata.
-    if (typeof data === 'string') {
+    if (typeof data === "string") {
       const metadata = JSON.parse(data)
       receivedFileInfoRef.current = metadata
       receivedChunksRef.current = [] // Reset for new file
       setTransferProgress(0)
-      toast.success('Incoming File', {
+      toast.success("Incoming File", {
         description: `Receiving ${metadata.name} (${(metadata.size / 1024 / 1024).toFixed(2)} MB)`,
       })
       return
@@ -714,12 +714,12 @@ export default function Room() {
         const url = URL.createObjectURL(fileBlob)
         setReceivedFile({ name: receivedFileInfoRef.current.name, url })
 
-        toast.success('File Received', {
+        toast.success("File Received", {
           description: `${receivedFileInfoRef.current.name} has been received.`,
         })
 
         // Auto-download
-        const a = document.createElement('a')
+        const a = document.createElement("a")
         a.href = url
         a.download = receivedFileInfoRef.current.name
         document.body.appendChild(a)
@@ -735,18 +735,18 @@ export default function Room() {
 
   const getStatusIcon = () => {
     if (isConnected) return <Wifi className="w-4 h-4 text-green-500" />
-    if (status.includes('Connecting') || status.includes('Joining'))
+    if (status.includes("Connecting") || status.includes("Joining"))
       return <Clock className="w-4 h-4 text-yellow-500 animate-spin" />
-    if (status.includes('failed') || status.includes('Disconnected'))
+    if (status.includes("failed") || status.includes("Disconnected"))
       return <WifiOff className="w-4 h-4 text-red-500" />
     return <Users className="w-4 h-4 text-blue-500" />
   }
 
   const getStatusColor = () => {
-    if (isConnected) return 'bg-green-500'
-    if (status.includes('failed') || status.includes('Disconnected'))
-      return 'bg-red-500'
-    return 'bg-yellow-500'
+    if (isConnected) return "bg-green-500"
+    if (status.includes("failed") || status.includes("Disconnected"))
+      return "bg-red-500"
+    return "bg-yellow-500"
   }
 
   return (
@@ -765,7 +765,7 @@ export default function Room() {
           transition={{
             duration: 20,
             repeat: Number.POSITIVE_INFINITY,
-            ease: 'linear',
+            ease: "linear",
           }}
         />
         <motion.div
@@ -777,7 +777,7 @@ export default function Room() {
           transition={{
             duration: 25,
             repeat: Number.POSITIVE_INFINITY,
-            ease: 'linear',
+            ease: "linear",
           }}
         />
       </div>
@@ -816,8 +816,8 @@ export default function Room() {
                       size="sm"
                       onClick={() => {
                         navigator.clipboard.writeText(roomId)
-                        toast.success('Room ID Copied', {
-                          description: 'Room ID has been copied to clipboard',
+                        toast.success("Room ID Copied", {
+                          description: "Room ID has been copied to clipboard",
                         })
                       }}
                       className="h-8 px-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
@@ -834,7 +834,7 @@ export default function Room() {
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      navigate({ to: '/' })
+                      navigate({ to: "/" })
                     }}
                     className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-white/30 dark:border-gray-600/30 hover:bg-white/90 dark:hover:bg-gray-700/90 text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white transition-all duration-200 shadow-sm hover:shadow-md"
                   >
@@ -880,9 +880,9 @@ export default function Room() {
               <motion.div
                 className={`relative p-8 border-2 border-dashed rounded-xl text-center transition-all duration-300 ${
                   dragOver
-                    ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/20'
-                    : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
-                } ${!isConnected ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                    ? "border-blue-500 bg-blue-50/50 dark:bg-blue-900/20"
+                    : "border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500"
+                } ${!isConnected ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
                 onDrop={handleDrop}
                 onDragOver={(e) => {
                   e.preventDefault()
@@ -901,7 +901,7 @@ export default function Room() {
                 />
                 <label
                   htmlFor="file-input"
-                  className={`cursor-pointer ${isSending || !isConnected ? 'cursor-not-allowed' : ''}`}
+                  className={`cursor-pointer ${isSending || !isConnected ? "cursor-not-allowed" : ""}`}
                 >
                   <motion.div
                     animate={dragOver ? { scale: 1.1 } : { scale: 1 }}
@@ -910,12 +910,12 @@ export default function Room() {
                     <FileUp className="mx-auto h-16 w-16 text-gray-400 dark:text-gray-500 mb-4" />
                   </motion.div>
                   <span className="block text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-                    {file ? file.name : 'Drop files here or click to select'}
+                    {file ? file.name : "Drop files here or click to select"}
                   </span>
                   <span className="text-sm text-gray-500 dark:text-gray-400">
                     {file
                       ? `${(file.size / 1024 / 1024).toFixed(2)} MB`
-                      : 'Any file type, any size'}
+                      : "Any file type, any size"}
                   </span>
                 </label>
 
@@ -954,7 +954,7 @@ export default function Room() {
                         transition={{
                           duration: 1,
                           repeat: Number.POSITIVE_INFINITY,
-                          ease: 'linear',
+                          ease: "linear",
                         }}
                         className="mr-3"
                       >
@@ -976,13 +976,13 @@ export default function Room() {
                 {(isSending || transferProgress > 0) && (
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
+                    animate={{ opacity: 1, height: "auto" }}
                     exit={{ opacity: 0, height: 0 }}
                     className="space-y-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl border border-blue-200/50 dark:border-blue-700/50"
                   >
                     <div className="flex items-center justify-between">
                       <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                        {isSending ? 'Sending' : 'Receiving'}:{' '}
+                        {isSending ? "Sending" : "Receiving"}:{" "}
                         {file?.name || receivedFileInfoRef.current?.name}
                       </p>
                       <span className="text-sm text-gray-600 dark:text-gray-400">
@@ -1011,8 +1011,8 @@ export default function Room() {
               <div className="text-center p-4 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800/50 dark:to-gray-700/50 rounded-xl">
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   {isConnected
-                    ? '🔒 Secure peer-to-peer connection established'
-                    : '⏳ Establishing secure connection...'}
+                    ? "🔒 Secure peer-to-peer connection established"
+                    : "⏳ Establishing secure connection..."}
                 </p>
               </div>
             </CardContent>

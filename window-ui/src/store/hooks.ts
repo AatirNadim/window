@@ -1,4 +1,4 @@
-import { useUserStore } from './userStore'
+import { useUserStore } from "./userStore"
 
 // Convenience hooks for common user store operations
 export const useUser = () => {

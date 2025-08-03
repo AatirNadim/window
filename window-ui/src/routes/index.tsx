@@ -1,27 +1,27 @@
-import { v4 as uuidv4 } from 'uuid'
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useState } from 'react'
-import { motion } from 'framer-motion'
-import { toast } from 'sonner'
-import { Share2, Plus, ArrowRight, Sparkles, Shield, Zap } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { v4 as uuidv4 } from "uuid"
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { useState } from "react"
+import { motion } from "framer-motion"
+import { toast } from "sonner"
+import { Share2, Plus, ArrowRight, Sparkles, Shield, Zap } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { ThemeToggle } from '@/components/theme-toggle'
-import { useUserStore } from '@/store'
+} from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { ThemeToggle } from "@/components/theme-toggle"
+import { useUserStore } from "@/store"
 
-export const Route = createFileRoute('/')({
+export const Route = createFileRoute("/")({
   component: Home,
 })
 
 export default function Home() {
-  const [roomId, setRoomId] = useState('')
+  const [roomId, setRoomId] = useState("")
 
   const navigate = useNavigate()
   const { initializeUser } = useUserStore()
@@ -36,7 +36,7 @@ export default function Home() {
     // navigate to the new room
     navigate({ to: `/room/${newRoomId}` })
 
-    toast.success('Room Created!', {
+    toast.success("Room Created!", {
       description: `Your room ID is: ${newRoomId}`,
     })
   }
@@ -45,12 +45,12 @@ export default function Home() {
     if (roomId.trim()) {
       navigate({ to: `/room/${roomId}` })
 
-      toast.success('Joining room...', {
+      toast.success("Joining room...", {
         description: `Connecting to room: ${roomId}`,
       })
     } else {
-      toast.error('Invalid Room ID', {
-        description: 'Please enter a valid room ID to join.',
+      toast.error("Invalid Room ID", {
+        description: "Please enter a valid room ID to join.",
       })
     }
   }
@@ -71,7 +71,7 @@ export default function Home() {
           transition={{
             duration: 20,
             repeat: Number.POSITIVE_INFINITY,
-            ease: 'linear',
+            ease: "linear",
           }}
         />
         <motion.div
@@ -83,7 +83,7 @@ export default function Home() {
           transition={{
             duration: 25,
             repeat: Number.POSITIVE_INFINITY,
-            ease: 'linear',
+            ease: "linear",
           }}
         />
       </div>
@@ -227,7 +227,7 @@ export default function Home() {
                   value={roomId}
                   onChange={(e) => setRoomId(e.target.value)}
                   className="flex-1 h-12 bg-white/50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-400 transition-colors"
-                  onKeyPress={(e) => e.key === 'Enter' && handleJoinRoom()}
+                  onKeyPress={(e) => e.key === "Enter" && handleJoinRoom()}
                 />
                 <motion.div
                   whileHover={{ scale: 1.05 }}

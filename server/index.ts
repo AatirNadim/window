@@ -19,6 +19,7 @@ console.log(`🚀 Signaling server running on port ${PORT}`);
 wss.on("connection", (ws: ExtendedWebSocket) => {
   console.debug("New client connected");
 
+  // @ts-expect-error
   ws.on("message", (data) => {
     console.debug("Received message");
     try {
@@ -30,47 +31,48 @@ wss.on("connection", (ws: ExtendedWebSocket) => {
     }
   });
 
+  // @ts-expect-error
   ws.on("close", () => {
     console.debug("Client disconnected");
   });
 
+  // @ts-expect-error
   ws.on("error", (error) => {
     console.error("WebSocket error:", error);
   });
 });
 
-
 const gracefulShutdown = () => {
-  console.log("🛑 Server shutting down gracefully...");
-  
+  console.log("Server shutting down gracefully...");
+
   // Close all WebSocket connections
   wss.clients.forEach((ws) => {
     if (ws.readyState === WebSocket.OPEN) {
       ws.close(1001, "Server restarting");
     }
   });
-  
+
   // Close the WebSocket server
   wss.close(() => {
-    console.log("✅ WebSocket server closed");
+    console.log("WebSocket server closed");
     process.exit(0);
   });
 };
 
 // Handle different termination signals
-process.on('SIGTERM', gracefulShutdown);
-process.on('SIGINT', gracefulShutdown);
+process.on("SIGTERM", gracefulShutdown);
+process.on("SIGINT", gracefulShutdown);
 
 // Handle process restart (for development)
-process.on('SIGUSR2', gracefulShutdown); // nodemon sends this signal
+process.on("SIGUSR2", gracefulShutdown); // nodemon sends this signal
 
 // Handle uncaught exceptions
-process.on('uncaughtException', (error) => {
-  console.error('Uncaught Exception:', error);
+process.on("uncaughtException", (error) => {
+  console.error("Uncaught Exception:", error);
   gracefulShutdown();
 });
 
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("Unhandled Rejection at:", promise, "reason:", reason);
   gracefulShutdown();
 });

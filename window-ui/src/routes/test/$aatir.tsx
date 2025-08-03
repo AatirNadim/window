@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute } from "@tanstack/react-router"
 
 const Aatir = () => {
   const { aatir } = Route.useParams()
@@ -6,6 +6,6 @@ const Aatir = () => {
   return <div>Aatir Component {aatir}</div>
 }
 
-export const Route = createFileRoute('/test/$aatir')({
+export const Route = createFileRoute("/test/$aatir")({
   component: Aatir,
 })

@@ -1,6 +1,6 @@
-import { create } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
-import { v4 as uuidv4 } from 'uuid'
+import { create } from "zustand"
+import { persist, createJSONStorage } from "zustand/middleware"
+import { v4 as uuidv4 } from "uuid"
 
 interface UserState {
   userId: string | null
@@ -23,36 +23,36 @@ export type { UserState }
 
 const generateRandomUsername = (): string => {
   const adjectives = [
-    'Swift',
-    'Bright',
-    'Cool',
-    'Fast',
-    'Smart',
-    'Bold',
-    'Calm',
-    'Keen',
-    'Quick',
-    'Sharp',
-    'Wise',
-    'Brave',
-    'Clear',
-    'Fresh',
+    "Swift",
+    "Bright",
+    "Cool",
+    "Fast",
+    "Smart",
+    "Bold",
+    "Calm",
+    "Keen",
+    "Quick",
+    "Sharp",
+    "Wise",
+    "Brave",
+    "Clear",
+    "Fresh",
   ]
   const nouns = [
-    'Fox',
-    'Eagle',
-    'Wolf',
-    'Tiger',
-    'Lion',
-    'Bear',
-    'Hawk',
-    'Owl',
-    'Shark',
-    'Falcon',
-    'Raven',
-    'Phoenix',
-    'Dragon',
-    'Panther',
+    "Fox",
+    "Eagle",
+    "Wolf",
+    "Tiger",
+    "Lion",
+    "Bear",
+    "Hawk",
+    "Owl",
+    "Shark",
+    "Falcon",
+    "Raven",
+    "Phoenix",
+    "Dragon",
+    "Panther",
   ]
 
   const adjective = adjectives[Math.floor(Math.random() * adjectives.length)]
@@ -75,7 +75,7 @@ export const useUserStore = create<UserState>()(
 
         // Only generate new user if doesn't exist
         if (!state.userId || !state.userName) {
-          console.log('user details not found, generating new user...')
+          console.log("user details not found, generating new user...")
 
           set({
             userId: uuidv4(),
@@ -140,7 +140,7 @@ export const useUserStore = create<UserState>()(
       },
     }),
     {
-      name: 'window-user-storage',
+      name: "window-user-storage",
       storage: createJSONStorage(() => localStorage),
       // Only persist userName, userId and currentRoomId will be regenerated
       partialize: (state) => ({

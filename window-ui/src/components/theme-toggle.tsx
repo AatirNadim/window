@@ -1,8 +1,8 @@
-'use client'
+"use client"
 
-import { Moon, Sun } from 'lucide-react'
-import { useTheme } from './theme-provider'
-import { Button } from '@/components/ui/button'
+import { Moon, Sun } from "lucide-react"
+import { useTheme } from "./theme-provider"
+import { Button } from "@/components/ui/button"
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme()
@@ -12,7 +12,7 @@ export function ThemeToggle() {
       variant="outline"
       size="icon"
       onClick={() => {
-        setTheme(theme === 'light' ? 'dark' : 'light')
+        setTheme(theme === "light" ? "dark" : "light")
       }}
       className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-white/20 hover:bg-white/90 dark:hover:bg-gray-800/90 transition-all duration-200"
     >
