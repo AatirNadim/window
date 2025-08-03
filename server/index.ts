@@ -38,3 +38,39 @@ wss.on("connection", (ws: ExtendedWebSocket) => {
     console.error("WebSocket error:", error);
   });
 });
+
+
+const gracefulShutdown = () => {
+  console.log("🛑 Server shutting down gracefully...");
+  
+  // Close all WebSocket connections
+  wss.clients.forEach((ws) => {
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.close(1001, "Server restarting");
+    }
+  });
+  
+  // Close the WebSocket server
+  wss.close(() => {
+    console.log("✅ WebSocket server closed");
+    process.exit(0);
+  });
+};
+
+// Handle different termination signals
+process.on('SIGTERM', gracefulShutdown);
+process.on('SIGINT', gracefulShutdown);
+
+// Handle process restart (for development)
+process.on('SIGUSR2', gracefulShutdown); // nodemon sends this signal
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  gracefulShutdown();
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  gracefulShutdown();
+});

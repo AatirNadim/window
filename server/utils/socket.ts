@@ -19,6 +19,40 @@ export class SocketService {
     private userSockets: Map<string, ExtendedWebSocket>
   ) {}
 
+  cleanupUser(userId: string, roomId?: string) {
+    // Remove user from userSockets
+    this.userSockets.delete(userId);
+
+    // Remove user from room if roomId is provided
+    if (roomId) {
+      const room = this.rooms.get(roomId);
+      if (room) {
+        room.users = room.users.filter((u) => u.id !== userId);
+
+        // Delete room if empty
+        if (room.users.length === 0) {
+          this.rooms.delete(roomId);
+        } else {
+          this.rooms.set(roomId, room);
+        }
+      }
+    }
+
+    console.log(`Cleaned up user ${userId} from room ${roomId}`);
+  }
+
+  // Get statistics about rooms and users
+  getStats() {
+    return {
+      activeRooms: this.rooms.size,
+      connectedUsers: this.userSockets.size,
+      rooms: Array.from(this.rooms.entries()).map(([id, room]) => ({
+        id,
+        userCount: room.users.length,
+      })),
+    };
+  }
+
   handleMessage(ws: ExtendedWebSocket, message: WebSocketMessage) {
     console.debug("Handling websocket message from client:", message);
     try {
