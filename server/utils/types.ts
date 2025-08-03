@@ -1,6 +1,13 @@
 // Shared types between client and server
 
 // WebRTC type definitions
+
+export type ExtendedWebSocket = WebSocket & {
+  userId?: string;
+  roomId?: string;
+  userName?: string;
+}
+
 interface RTCSessionDescriptionInit {
   type: "offer" | "answer" | "pranswer" | "rollback";
   sdp: string;

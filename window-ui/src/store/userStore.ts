@@ -7,11 +7,16 @@ interface UserState {
   userName: string | null
   // currentRoomId: string | null
 
+  remoteUsers: Record<string, string>
+
   // Actions
   initializeUser: () => void
   joinRoom: (roomId: string) => void
   leaveRoom: () => void
   clearUser: () => void
+  addRemoteUser: (userId: string, userName: string) => void
+  removeRemoteUser: (userId: string) => void
+  clearRemoteUsers: () => void
 }
 
 export type { UserState }
@@ -63,6 +68,7 @@ export const useUserStore = create<UserState>()(
       userId: null,
       userName: null,
       currentRoomId: null,
+      remoteUsers: {},
 
       initializeUser: () => {
         const state = get()
@@ -112,15 +118,36 @@ export const useUserStore = create<UserState>()(
           userName: null,
         })
       },
+
+      addRemoteUser: (userId: string, userName: string) => {
+        set((state) => ({
+          remoteUsers: {
+            ...state.remoteUsers,
+            [userId]: userName,
+          },
+        }))
+      },
+
+      removeRemoteUser: (userId: string) => {
+        set((state) => {
+          const { [userId]: _, ...remainingUsers } = state.remoteUsers || {}
+          return { remoteUsers: remainingUsers }
+        })
+      },
+
+      clearRemoteUsers: () => {
+        set({ remoteUsers: {} })
+      },
     }),
     {
       name: 'window-user-storage',
       storage: createJSONStorage(() => localStorage),
       // Only persist userName, userId and currentRoomId will be regenerated
-      // partialize: (state) => ({
-      //   userName: state.userName,
-      //   // Don't persist userId or currentRoomId as they should be session-specific
-      // }),
+      partialize: (state) => ({
+        userName: state.userName,
+        userId: state.userId,
+        // Don't persist userId or currentRoomId as they should be session-specific
+      }),
     },
   ),
 )

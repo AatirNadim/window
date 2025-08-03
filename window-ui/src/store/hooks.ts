@@ -7,8 +7,8 @@ export const useUser = () => {
 }
 
 export const useUserActions = () => {
-  const { initializeUser, joinRoom, leaveRoom, clearUser } = useUserStore()
-  return { initializeUser, joinRoom, leaveRoom, clearUser }
+  const { initializeUser, joinRoom, leaveRoom, clearUser, addRemoteUser } = useUserStore()
+  return { initializeUser, joinRoom, leaveRoom, clearUser, addRemoteUser }
 }
 
 // Combined hook for when you need both state and actions

@@ -22,7 +22,6 @@ import type {
   JoinRoomMessage,
   LeaveRoomMessage,
   OfferMessage,
-  UserJoinedMessage,
   UserLeftMessage,
   WebSocketMessage,
 } from '@/types'
@@ -49,9 +48,16 @@ export default function Room() {
   const { roomId } = Route.useParams()
 
   // Zustand store
-  const { userId, userName, initializeUser, leaveRoom } = useUserStore()
-
-  const userRecord = useRef<Record<string, string>>({})
+  const {
+    userId,
+    userName,
+    remoteUsers,
+    initializeUser,
+    leaveRoom,
+    addRemoteUser,
+    removeRemoteUser,
+    clearRemoteUsers,
+  } = useUserStore()
 
   // Refs for core WebRTC objects
   const socketRef = useRef<WebSocket | null>(null)
@@ -141,6 +147,10 @@ export default function Room() {
   }
 
   useEffect(() => {
+    console.info('\n\nRemote users updated:', remoteUsers, '\n\n')
+  }, [remoteUsers])
+
+  useEffect(() => {
     initializeUser()
 
     console.log('user details generated --> ', userId, userName)
@@ -184,6 +194,7 @@ export default function Room() {
         } as LeaveRoomMessage),
       )
       socketRef.current?.close()
+      clearRemoteUsers()
       leaveRoom()
     } catch (error) {
       console.error('Error cleaning up WebSocket connection:', error)
@@ -309,11 +320,11 @@ export default function Room() {
       pc.onconnectionstatechange = () => {
         switch (pc.connectionState) {
           case 'connected':
-            if (userRecord.current[remoteUserId]) return
+            if (remoteUsers[remoteUserId]) return
             console.debug(
               `Connection established with remote user ${remoteUserId}`,
             )
-            userRecord.current[remoteUserId] = remoteUserName
+            addRemoteUser(remoteUserId, remoteUserName)
             setIsConnected(true)
             setStatus('Connected to remote user')
             break
@@ -323,9 +334,7 @@ export default function Room() {
               `Connection with remote user ${remoteUserId} lost. Attempting to reconnect...`,
             )
             setConnectionStatus('connecting')
-            if (userRecord.current[remoteUserId]) {
-              delete userRecord.current[remoteUserId]
-            }
+            removeRemoteUser(remoteUserId)
             setStatus(`Reconnecting to ${remoteUserId}...`)
             break
           case 'closed':
@@ -333,7 +342,7 @@ export default function Room() {
             setIsConnected(false)
             setStatus('Connection closed')
 
-            userRecord.current = {}
+            clearRemoteUsers()
             break
           default:
             console.debug(
@@ -634,6 +643,11 @@ export default function Room() {
       type: file.type,
       size: file.size,
     })
+
+    toast('Sending file...', {
+      description: `Sending ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`,
+    })
+
     dataChannelRef.current.send(metadata)
 
     // 2. Send file in chunks
