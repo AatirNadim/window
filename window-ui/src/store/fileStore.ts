@@ -13,6 +13,9 @@ interface FileState {
     type: string
     size: number
   } | null
+
+  transferProgress: number
+
   setFile: (file: File | null) => void
   setReceivedFile: (file: { name: string; url: string | null }) => void
   clearFile: () => void
@@ -26,6 +29,7 @@ interface FileState {
       size: number
     } | null,
   ) => void
+  setTransferProgress: (progress: number) => void
 }
 
 export type { FileState }
@@ -38,6 +42,7 @@ export const useFileStore = create<FileState>()((set) => ({
   },
   receivedChunks: [],
   receivedFileInfo: null,
+  transferProgress: 0,
   setFile: (file) => set({ file }),
   setReceivedFile: (file) => set({ receivedFile: file }),
   clearFile: () => set({ file: null }),
@@ -47,4 +52,5 @@ export const useFileStore = create<FileState>()((set) => ({
     })),
   clearReceivedChunks: () => set({ receivedChunks: [] }),
   setReceivedFileInfo: (info) => set({ receivedFileInfo: info }),
+  setTransferProgress: (progress) => set({ transferProgress: progress }),
 }))

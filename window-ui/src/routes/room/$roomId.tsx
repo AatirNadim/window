@@ -70,6 +70,8 @@ export default function Room() {
     clearReceivedChunks,
     setReceivedFile,
     setReceivedFileInfo,
+    transferProgress,
+    setTransferProgress,
   } = useFileStore()
 
   // Refs for core WebRTC objects
@@ -86,7 +88,7 @@ export default function Room() {
 
   const [isConnected, setIsConnected] = useState(false)
   const [isSending, setIsSending] = useState(false)
-  const [transferProgress, setTransferProgress] = useState(0)
+
   const [dragOver, setDragOver] = useState(false)
 
   const createWSConnection = () => {
@@ -141,14 +143,7 @@ export default function Room() {
   }
 
   useEffect(() => {
-    console.debug("Received file info updated:", receivedFileInfo)
-    console.debug("Received data:", receivedChunks)
-  }, [receivedFileInfo])
-
-  useEffect(() => {
     initializeUser()
-
-    console.log("user details generated --> ", userId, userName)
 
     if (!userId || !userName) {
       toast.error("User Initialization Failed", {
@@ -169,14 +164,6 @@ export default function Room() {
       cleanUp()
     }
   }, [roomId, userId])
-
-  useEffect(() => {
-    console.debug(
-      "\n\nPeer connections updated:",
-      peerConnections.current,
-      "\n\n",
-    )
-  }, [peerConnections.current])
 
   const cleanUp = () => {
     try {
@@ -572,17 +559,6 @@ export default function Room() {
       })
     }
   }
-
-  // const resetConnection = () => {
-  //   Object.values(peerConnections.current).forEach((pc) => {
-  //     pc.close()
-  //   })
-  //   peerConnections.current = {}
-  //   dataChannelRef.current = null
-  //   setFile(null)
-  //   setIsSending(false)
-  //   setTransferProgress(0)
-  // }
 
   const setupDataChannel = (channel: RTCDataChannel) => {
     channel.onopen = () => {
