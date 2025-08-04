@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import { motion, AnimatePresence } from "framer-motion"
 import {
@@ -16,15 +16,7 @@ import {
   Copy,
 } from "lucide-react"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import type {
-  AnswerMessage,
-  IceCandidateMessage,
-  JoinRoomMessage,
-  LeaveRoomMessage,
-  OfferMessage,
-  UserLeftMessage,
-  WebSocketMessage,
-} from "@/types"
+import type { LeaveRoomMessage } from "@/types"
 import { useUserStore } from "@/store"
 import {
   Card,
@@ -36,8 +28,9 @@ import {
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { CHUNK_SIZE, serverPath } from "@/lib/constants"
 import { useFileStore } from "@/store/fileStore"
+import { useFile } from "@/store/hooks/fileHook"
+import { useSocket } from "@/store/hooks/socketHook"
 
 export const Route = createFileRoute("/room/$roomId")({
   component: Room,
@@ -51,96 +44,38 @@ export default function Room() {
   const {
     userId,
     userName,
-    remoteUsers,
     initializeUser,
     leaveRoom,
-    addRemoteUser,
-    removeRemoteUser,
     clearRemoteUsers,
+    setRoomId,
   } = useUserStore()
 
+  const { sendFile } = useFile()
+
+  const { file, receivedFileInfo, setFile, transferProgress, isSending } = useFileStore()
+
   const {
-    file,
-    receivedChunks,
-    receivedFile,
-    receivedFileInfo,
-    setFile,
-    addReceivedChunk,
-    clearFile,
-    clearReceivedChunks,
-    setReceivedFile,
-    setReceivedFileInfo,
-    transferProgress,
-    setTransferProgress,
-  } = useFileStore()
+    socketRef,
+    isConnected,
+    status,
+    createWSConnection,
+    peerConnections,
+  } = useSocket()
 
   // Refs for core WebRTC objects
-  const socketRef = useRef<WebSocket | null>(null)
-  const peerConnections = useRef<Record<string, RTCPeerConnection>>({})
-  const dataChannelRef = useRef<RTCDataChannel | null>(null)
 
-  // State management
-  const [status, setStatus] = useState("Connecting to room...")
-
-  const [connectionStatus, setConnectionStatus] = useState<
-    "connecting" | "connected" | "disconnected"
-  >("connecting")
-
-  const [isConnected, setIsConnected] = useState(false)
-  const [isSending, setIsSending] = useState(false)
+  useEffect(() => {
+    if (!roomId) {
+      toast.error("Room ID is required", {
+        description: "Please provide a valid room ID to join.",
+      })
+      navigate({ to: "/" })
+      return
+    }
+    setRoomId(roomId)
+  }, [roomId, navigate])
 
   const [dragOver, setDragOver] = useState(false)
-
-  const createWSConnection = () => {
-    try {
-      if (!userId || !userName) {
-        console.error("User ID or Name is not initialized")
-        return
-      }
-
-      const wsProtocol = window.location.protocol === "https:" ? "wss" : "ws"
-      const socket = new WebSocket(`${wsProtocol}://${serverPath}`)
-      socketRef.current = socket
-
-      socket.onopen = () => {
-        setStatus("Joining room...")
-
-        const msg: JoinRoomMessage = {
-          type: "join-room",
-          roomId,
-          userId,
-          userName,
-        }
-
-        console.log("Joining room with message: ", msg)
-        // Join the room automatically with user info
-        socket.send(JSON.stringify(msg))
-      }
-
-      socket.onmessage = (event) => {
-        const message = JSON.parse(event.data)
-        handleSignalingMessage(message)
-      }
-
-      socket.onclose = () => {
-        setStatus("Disconnected from server")
-        setIsConnected(false)
-      }
-
-      socket.onerror = () => {
-        toast.error("Connection Error", {
-          description: "Failed to connect to signaling server",
-        })
-        setStatus("Connection failed")
-      }
-    } catch (error) {
-      console.error("Error creating WebSocket connection:", error)
-      toast.error("Connection Error", {
-        description: "Failed to connect to signaling server",
-      })
-      setStatus("Connection failed")
-    }
-  }
 
   useEffect(() => {
     initializeUser()
@@ -183,399 +118,6 @@ export default function Room() {
     }
   }
 
-  const handleSignalingMessage = async (message: WebSocketMessage) => {
-    console.debug("Received signaling message: ", message)
-    switch (message.type) {
-      case "user-joined":
-        createPeerConnection(message.userId, message.userName)
-
-        await createOffer(message.userId)
-
-        toast.success("New User Joined", {
-          description: `A new user, ${message.userName}, with ID ${message.userId} joined the room.`,
-        })
-
-        setStatus("A user has joined the room")
-        break
-
-      case "offer":
-        await handleOffer(message)
-
-        break
-
-      case "answer":
-        await handleAnswer(message)
-        break
-
-      case "ice-candidate":
-        await handleIceCandidate(message)
-        break
-
-      case "user-left":
-        handleRemoteUserLeft(message)
-
-        toast.error("User Left", {
-          description: "The other user has left the room.",
-        })
-        break
-
-      case "error":
-        toast.error("Error", {
-          description: message.message || "An error occurred",
-        })
-        setStatus("Connection failed")
-        setIsConnected(false)
-        // resetConnection()
-        break
-    }
-  }
-
-  const sendWsMessage = (message: WebSocketMessage) => {
-    try {
-      if (socketRef.current?.readyState === WebSocket.OPEN) {
-        socketRef.current.send(JSON.stringify(message))
-      } else {
-        console.error("WebSocket is not open. Cannot send message.")
-      }
-    } catch (error) {
-      console.error("Error sending WebSocket message:", error)
-    }
-  }
-
-  const createPeerConnection = (
-    remoteUserId: string,
-    remoteUserName: string,
-  ) => {
-    try {
-      console.debug(
-        "Creating new RTCPeerConnection with remote user ID:",
-        remoteUserId,
-        remoteUserName,
-      )
-
-      if (!userId || !userName) {
-        throw new Error("User not initialized")
-      }
-
-      const pc = new RTCPeerConnection({
-        iceServers: [
-          {
-            urls: [
-              "stun:stun.l.google.com:19302",
-              "stun:stun1.l.google.com:19302",
-              "stun:stun2.l.google.com:19302",
-            ],
-          },
-        ],
-        iceCandidatePoolSize: 10,
-      })
-
-      // registering peer connection event handlers
-
-      pc.onicecandidate = (event) => {
-        console.log(
-          "sending ice candidate for user:",
-          remoteUserId,
-          event.candidate,
-          socketRef.current,
-        )
-
-        if (event.candidate && socketRef.current) {
-          console.debug(
-            "Sending ICE candidate:",
-            event.candidate,
-            "to remote user:",
-            remoteUserId,
-          )
-          sendWsMessage({
-            type: "ice-candidate",
-            roomId,
-            fromUserId: userId,
-            toUserId: remoteUserId,
-            candidate: event.candidate,
-          })
-        }
-      }
-
-      // Add after pc.onconnectionstatechange
-
-      pc.onconnectionstatechange = () => {
-        switch (pc.connectionState) {
-          case "connected":
-            if (remoteUsers[remoteUserId]) return
-            console.debug(
-              `Connection established with remote user ${remoteUserId}`,
-            )
-            addRemoteUser(remoteUserId, remoteUserName)
-            setIsConnected(true)
-            setStatus("Connected to remote user")
-            break
-          case "disconnected":
-          case "failed":
-            console.warn(
-              `Connection with remote user ${remoteUserId} lost. Attempting to reconnect...`,
-            )
-            setConnectionStatus("connecting")
-            removeRemoteUser(remoteUserId)
-            setStatus(`Reconnecting to ${remoteUserId}...`)
-            break
-          case "closed":
-            console.warn(`Connection with remote user ${remoteUserId} closed.`)
-            setIsConnected(false)
-            setStatus("Connection closed")
-
-            clearRemoteUsers()
-            break
-          default:
-            console.debug(
-              `Unhandled behaviour: Connection state with remote user ${remoteUserId}: ${pc.connectionState}`,
-            )
-        }
-      }
-
-      pc.oniceconnectionstatechange = () => {
-        console.debug(
-          `ICE connection state with ${remoteUserId}: ${pc.iceConnectionState}`,
-        )
-
-        if (pc.iceConnectionState === "failed") {
-          console.error("ICE connection failed, attempting restart")
-          pc.restartIce()
-        }
-      }
-
-      pc.onicegatheringstatechange = () => {
-        console.debug(
-          `ICE gathering state with ${remoteUserId}: ${pc.iceGatheringState}`,
-        )
-      }
-
-      pc.ondatachannel = (event) => {
-        const channel = event.channel
-        dataChannelRef.current = channel
-        setupDataChannel(channel)
-      }
-
-      pc.onconnectionstatechange = () => {
-        console.debug(
-          `Connection state with remote user ${remoteUserId} changed: ${pc.connectionState}`,
-        )
-
-        if (
-          pc.connectionState === "disconnected" ||
-          pc.connectionState === "failed"
-        ) {
-          console.warn(
-            `Connection with remote user ${remoteUserId} lost. Attempting to reconnect...`,
-          )
-          setConnectionStatus("connecting")
-          // setStatus(`Reconnecting to ${remoteUserId}...`)
-        }
-
-        setConnectionStatus(
-          pc.connectionState as "connecting" | "connected" | "disconnected",
-        )
-      }
-
-      peerConnections.current[remoteUserId] = pc
-
-      console.info(
-        "new peer connection created and added to records for user:",
-        remoteUserId,
-      )
-    } catch (error) {
-      console.error("Error creating peer connection:", error)
-      toast.error("Peer Connection Failed", {
-        description: "Failed to create WebRTC peer connection.",
-      })
-      setStatus("Peer connection failed")
-    }
-  }
-
-  const createOffer = async (remoteUserId: string) => {
-    try {
-      if (!userId || !userName) {
-        throw new Error("User not initialized")
-      }
-
-      if (!peerConnections.current[remoteUserId]) {
-        throw new Error(`Peer connection not found for user: ${remoteUserId}`)
-      }
-
-      const pc = peerConnections.current[remoteUserId]
-
-      // setting up data channel for file transfer
-
-      console.debug(
-        "Creating data channel for file transfer with remote user:",
-        remoteUserId,
-      )
-
-      const dataChannel = pc.createDataChannel("fileTransfer", {
-        ordered: true,
-      })
-      dataChannelRef.current = dataChannel
-      setupDataChannel(dataChannel)
-
-      console.debug("Creating offer for remote user:", remoteUserId)
-
-      const offer = await pc.createOffer()
-
-      console.debug("Setting local description with offer:", offer)
-
-      await pc.setLocalDescription(offer)
-
-      sendWsMessage({
-        type: "offer",
-        fromUserId: userId,
-        toUserId: remoteUserId,
-        offer,
-        roomId,
-      })
-      console.debug("Offer sent to remote user:", remoteUserId)
-    } catch (error) {
-      console.error("Error creating offer:", error)
-      toast.error("Offer Creation Failed", {
-        description: "Failed to create WebRTC offer.",
-      })
-      setStatus("Offer creation failed")
-    }
-  }
-
-  const handleOffer = async (msg: OfferMessage) => {
-    try {
-      if (!userId) {
-        throw new Error("User not initialized")
-      }
-
-      const { fromUserId, offer } = msg
-      let pc = peerConnections.current[fromUserId]
-
-      // creating peer connection for the first time with the existing client, when they send an offer
-      if (!pc) {
-        createPeerConnection(msg.fromUserId, msg.fromUserName)
-        pc = peerConnections.current[fromUserId]
-      }
-
-      console.debug("Handling offer from remote user:", fromUserId)
-      console.debug("Received offer:", offer)
-
-      await pc.setRemoteDescription(new RTCSessionDescription(offer))
-
-      console.debug("Remote description set with offer:", offer)
-
-      // Create an answer to send back
-      const answer = await pc.createAnswer()
-      await pc.setLocalDescription(answer)
-      console.debug("Created answer:", answer)
-
-      sendWsMessage({
-        type: "answer",
-        roomId,
-        fromUserId: userId,
-        toUserId: fromUserId,
-        answer,
-      })
-    } catch (error) {
-      console.error("Error handling offer:", error)
-      toast.error("Offer Handling Failed", {
-        description: "Failed to handle WebRTC offer.",
-      })
-      setStatus("Offer handling failed")
-    }
-  }
-
-  const handleAnswer = async (msg: AnswerMessage) => {
-    try {
-      if (!peerConnections.current[msg.fromUserId]) {
-        throw new Error(`Peer connection not found for user: ${msg.fromUserId}`)
-      }
-
-      const pc = peerConnections.current[msg.fromUserId]
-
-      console.debug("Handling answer from remote user:", msg.fromUserId)
-
-      console.debug("Received answer:", msg.answer)
-
-      await pc.setRemoteDescription(new RTCSessionDescription(msg.answer))
-
-      console.debug("Remote description set with answer:", msg.answer)
-      setIsConnected(true)
-    } catch (error) {
-      console.error("Error handling answer:", error)
-      toast.error("Answer Handling Failed", {
-        description: "Failed to handle WebRTC answer.",
-      })
-      setStatus("Answer handling failed")
-    }
-  }
-
-  const handleIceCandidate = async (msg: IceCandidateMessage) => {
-    try {
-      if (!peerConnections.current[msg.fromUserId]) {
-        throw new Error(`Peer connection not found for user: ${msg.fromUserId}`)
-      }
-
-      const pc = peerConnections.current[msg.fromUserId]
-
-      if (!pc.remoteDescription) {
-        console.warn("Remote description not set yet, waiting for offer/answer")
-        return
-      }
-
-      console.debug("Handling ICE candidate from remote user:", msg.fromUserId)
-
-      console.debug("Received ICE candidate:", msg.candidate)
-
-      await pc.addIceCandidate(new RTCIceCandidate(msg.candidate))
-
-      console.debug("ICE candidate added to peer connection:", msg.candidate)
-    } catch (error) {
-      console.error("Error handling ICE candidate:", error)
-      // toast.error('ICE Candidate Handling Failed', {
-      //   description: 'Failed to handle WebRTC ICE candidate.',
-      // })
-      setStatus("ICE candidate handling failed")
-    }
-  }
-
-  const handleRemoteUserLeft = (msg: UserLeftMessage) => {
-    const remoteUserId = msg.userId
-    try {
-      peerConnections.current[remoteUserId]?.close()
-      delete peerConnections.current[remoteUserId]
-
-      console.debug(
-        `Remote user ${remoteUserId} has left the room. Peer connection closed.`,
-      )
-
-      toast.info("Remote User Left", {
-        description: `User with ID ${remoteUserId} has left the room.`,
-      })
-    } catch (error) {
-      console.error("Error handling remote user left:", error)
-      toast.error("Remote User Left", {
-        description: `User with ID ${remoteUserId} has left the room.`,
-      })
-    }
-  }
-
-  const setupDataChannel = (channel: RTCDataChannel) => {
-    channel.onopen = () => {
-      setStatus("Connection established! Ready to share.")
-      setIsConnected(true)
-    }
-
-    channel.onclose = () => {
-      setStatus("Connection closed.")
-      setIsConnected(false)
-    }
-
-    channel.onmessage = (event) => {
-      handleReceiveMessage(event.data)
-    }
-  }
-
   // --- File Sending Logic ---
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.[0]) {
@@ -590,119 +132,6 @@ export default function Room() {
     const files = e.dataTransfer.files
     if (files.length > 0) {
       setFile(files[0])
-    }
-  }
-
-  const sendFile = () => {
-    if (
-      !file ||
-      !dataChannelRef.current ||
-      dataChannelRef.current.readyState !== "open"
-    ) {
-      toast.error("Cannot send file", {
-        description: "No file selected or connection not ready.",
-      })
-      return
-    }
-
-    setIsSending(true)
-    setTransferProgress(0)
-
-    // 1. Send metadata first
-    const metadata = JSON.stringify({
-      name: file.name,
-      type: file.type,
-      size: file.size,
-    })
-
-    toast("Sending file...", {
-      description: `Sending ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`,
-    })
-
-    dataChannelRef.current.send(metadata)
-
-    // 2. Send file in chunks
-    const fileReader = new FileReader()
-    let offset = 0
-
-    fileReader.onload = (e) => {
-      if (e.target?.result) {
-        dataChannelRef.current?.send(e.target.result as ArrayBuffer)
-        offset += (e.target.result as ArrayBuffer).byteLength
-        setTransferProgress((offset / file.size) * 100)
-
-        if (offset < file.size) {
-          readSlice(offset)
-        } else {
-          toast.success("File Sent", {
-            description: `${file.name} has been sent successfully.`,
-          })
-          setIsSending(false)
-          setFile(null) // Clear file input after sending
-        }
-      }
-    }
-
-    const readSlice = (o: number) => {
-      const slice = file.slice(o, o + CHUNK_SIZE)
-      fileReader.readAsArrayBuffer(slice)
-    }
-
-    readSlice(0)
-  }
-
-  // --- File Receiving Logic ---
-  const handleReceiveMessage = (data: any) => {
-    // If data is a string, it's metadata.
-    if (typeof data === "string") {
-      const metadata = JSON.parse(data)
-      setReceivedFileInfo(metadata)
-      clearReceivedChunks()
-      setTransferProgress(0)
-      toast.success("Incoming File", {
-        description: `Receiving ${metadata.name} (${(metadata.size / 1024 / 1024).toFixed(2)} MB)`,
-      })
-      return
-    }
-
-    // Otherwise, it's a file chunk (ArrayBuffer)
-
-    addReceivedChunk(data as ArrayBuffer)
-    const receivedSize = receivedChunks.reduce(
-      (acc, chunk) => acc + chunk.byteLength,
-      0,
-    )
-
-    if (receivedFileInfo) {
-      setTransferProgress((receivedSize / receivedFileInfo.size) * 100)
-
-      // If all chunks received, assemble the file
-      if (receivedSize === receivedFileInfo.size) {
-        const fileBlob = new Blob(receivedChunks, {
-          type: receivedFileInfo.type,
-        })
-        const url = URL.createObjectURL(fileBlob)
-        setReceivedFile({ name: receivedFileInfo.name, url })
-
-        toast.success("File Received", {
-          description: `${receivedFileInfo.name} has been received.`,
-        })
-
-        // Auto-download
-        const a = document.createElement("a")
-        a.href = url
-        a.download = receivedFileInfo.name
-        document.body.appendChild(a)
-        a.click()
-        document.body.removeChild(a)
-
-        console.log("received file info:", receivedFileInfo)
-        console.log("receieved file metadata: ", receivedFile)
-
-        // Reset for next transfer
-        setReceivedFileInfo(null)
-        setTransferProgress(0)
-      }
     }
   }
 

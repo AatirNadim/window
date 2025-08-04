@@ -7,6 +7,8 @@ interface UserState {
   userName: string | null
   // currentRoomId: string | null
 
+  roomId: string | null
+
   remoteUsers: Record<string, string>
 
   // Actions
@@ -17,6 +19,7 @@ interface UserState {
   addRemoteUser: (userId: string, userName: string) => void
   removeRemoteUser: (userId: string) => void
   clearRemoteUsers: () => void
+  setRoomId: (roomId: string) => void
 }
 
 export type { UserState }
@@ -69,6 +72,7 @@ export const useUserStore = create<UserState>()(
       userName: null,
       currentRoomId: null,
       remoteUsers: {},
+      roomId: null,
 
       initializeUser: () => {
         const state = get()
@@ -137,6 +141,9 @@ export const useUserStore = create<UserState>()(
 
       clearRemoteUsers: () => {
         set({ remoteUsers: {} })
+      },
+      setRoomId: (roomId: string) => {
+        set({ roomId: roomId })
       },
     }),
     {
