@@ -26,6 +26,12 @@ export default function Home() {
   const navigate = useNavigate()
   const { initializeUser } = useUserStore()
 
+  // UUID validation function
+  const isValidUUID = (str: string): boolean => {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    return uuidRegex.test(str)
+  }
+
   const handleCreateRoom = () => {
     // Initialize user before creating room
     initializeUser()
@@ -42,17 +48,26 @@ export default function Home() {
   }
 
   const handleJoinRoom = () => {
-    if (roomId.trim()) {
-      navigate({ to: `/room/${roomId}` })
-
-      toast.success("Joining room...", {
-        description: `Connecting to room: ${roomId}`,
-      })
-    } else {
+    if (!roomId.trim()) {
       toast.error("Invalid Room ID", {
-        description: "Please enter a valid room ID to join.",
+        description: "Please enter a room ID to join.",
       })
+      return
     }
+
+    if (!isValidUUID(roomId.trim())) {
+      setRoomId("") // Clear the input field
+      toast.error("Invalid Room ID Format", {
+        description: "Please enter a valid UUID format room ID.",
+      })
+      return
+    }
+
+    navigate({ to: `/room/${roomId}` })
+
+    toast.success("Joining room...", {
+      description: `Connecting to room: ${roomId}`,
+    })
   }
 
   return (
