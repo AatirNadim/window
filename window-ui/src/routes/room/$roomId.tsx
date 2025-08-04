@@ -36,12 +36,12 @@ import {
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { CHUNK_SIZE, serverPath } from "@/lib/constants"
+import { useFileStore } from "@/store/fileStore"
 
 export const Route = createFileRoute("/room/$roomId")({
   component: Room,
 })
-
-const CHUNK_SIZE = 64 * 1024 // 64 KB chunk size
 
 export default function Room() {
   const navigate = useNavigate()
@@ -59,6 +59,19 @@ export default function Room() {
     clearRemoteUsers,
   } = useUserStore()
 
+  const {
+    file,
+    receivedChunks,
+    receivedFile,
+    receivedFileInfo,
+    setFile,
+    addReceivedChunk,
+    clearFile,
+    clearReceivedChunks,
+    setReceivedFile,
+    setReceivedFileInfo,
+  } = useFileStore()
+
   // Refs for core WebRTC objects
   const socketRef = useRef<WebSocket | null>(null)
   const peerConnections = useRef<Record<string, RTCPeerConnection>>({})
@@ -72,28 +85,9 @@ export default function Room() {
   >("connecting")
 
   const [isConnected, setIsConnected] = useState(false)
-  const [file, setFile] = useState<File | null>(null)
   const [isSending, setIsSending] = useState(false)
   const [transferProgress, setTransferProgress] = useState(0)
-  const [receivedFile, setReceivedFile] = useState<{
-    name: string
-    url: string | null
-  }>({ name: "", url: null })
   const [dragOver, setDragOver] = useState(false)
-
-  const serverPort: string = import.meta.env.VITE_SERVER_PORT || "8080"
-
-  const serverPath = `${
-    import.meta.env.VITE_SERVER_PATH || "localhost"
-  }:${serverPort}`
-
-  // Refs for receiving file data
-  const receivedChunksRef = useRef<Array<ArrayBuffer>>([])
-  const receivedFileInfoRef = useRef<{
-    name: string
-    type: string
-    size: number
-  } | null>(null)
 
   const createWSConnection = () => {
     try {
@@ -147,8 +141,9 @@ export default function Room() {
   }
 
   useEffect(() => {
-    console.info("\n\nRemote users updated:", remoteUsers, "\n\n")
-  }, [remoteUsers])
+    console.debug("Received file info updated:", receivedFileInfo)
+    console.debug("Received data:", receivedChunks)
+  }, [receivedFileInfo])
 
   useEffect(() => {
     initializeUser()
@@ -685,8 +680,8 @@ export default function Room() {
     // If data is a string, it's metadata.
     if (typeof data === "string") {
       const metadata = JSON.parse(data)
-      receivedFileInfoRef.current = metadata
-      receivedChunksRef.current = [] // Reset for new file
+      setReceivedFileInfo(metadata)
+      clearReceivedChunks()
       setTransferProgress(0)
       toast.success("Incoming File", {
         description: `Receiving ${metadata.name} (${(metadata.size / 1024 / 1024).toFixed(2)} MB)`,
@@ -695,39 +690,41 @@ export default function Room() {
     }
 
     // Otherwise, it's a file chunk (ArrayBuffer)
-    receivedChunksRef.current.push(data)
-    const receivedSize = receivedChunksRef.current.reduce(
+
+    addReceivedChunk(data as ArrayBuffer)
+    const receivedSize = receivedChunks.reduce(
       (acc, chunk) => acc + chunk.byteLength,
       0,
     )
 
-    if (receivedFileInfoRef.current) {
-      setTransferProgress(
-        (receivedSize / receivedFileInfoRef.current.size) * 100,
-      )
+    if (receivedFileInfo) {
+      setTransferProgress((receivedSize / receivedFileInfo.size) * 100)
 
       // If all chunks received, assemble the file
-      if (receivedSize === receivedFileInfoRef.current.size) {
-        const fileBlob = new Blob(receivedChunksRef.current, {
-          type: receivedFileInfoRef.current.type,
+      if (receivedSize === receivedFileInfo.size) {
+        const fileBlob = new Blob(receivedChunks, {
+          type: receivedFileInfo.type,
         })
         const url = URL.createObjectURL(fileBlob)
-        setReceivedFile({ name: receivedFileInfoRef.current.name, url })
+        setReceivedFile({ name: receivedFileInfo.name, url })
 
         toast.success("File Received", {
-          description: `${receivedFileInfoRef.current.name} has been received.`,
+          description: `${receivedFileInfo.name} has been received.`,
         })
 
         // Auto-download
         const a = document.createElement("a")
         a.href = url
-        a.download = receivedFileInfoRef.current.name
+        a.download = receivedFileInfo.name
         document.body.appendChild(a)
         a.click()
         document.body.removeChild(a)
 
+        console.log("received file info:", receivedFileInfo)
+        console.log("receieved file metadata: ", receivedFile)
+
         // Reset for next transfer
-        receivedFileInfoRef.current = null
+        setReceivedFileInfo(null)
         setTransferProgress(0)
       }
     }
@@ -983,7 +980,7 @@ export default function Room() {
                     <div className="flex items-center justify-between">
                       <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                         {isSending ? "Sending" : "Receiving"}:{" "}
-                        {file?.name || receivedFileInfoRef.current?.name}
+                        {file?.name || receivedFileInfo?.name}
                       </p>
                       <span className="text-sm text-gray-600 dark:text-gray-400">
                         {Math.round(transferProgress)}%

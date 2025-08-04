@@ -1,3 +1,5 @@
+import { WebSocket } from "ws";
+
 import {
   WebSocketMessage,
   Room,
