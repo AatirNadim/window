@@ -16,7 +16,7 @@ import { useFileStore } from "../fileStore"
 export const useSocket = () => {
   const socketRef = useRef<WebSocket | null>(null)
   const peerConnections = useRef<Record<string, RTCPeerConnection>>({})
-  const dataChannelRef = useRef<RTCDataChannel | null>(null)
+  const dataChannelMap = useRef<Record<string, RTCDataChannel | null>>({})
 
   const [status, setStatus] = useState("Connecting to room...")
   const [isConnected, setIsConnected] = useState(false)
@@ -255,7 +255,7 @@ export const useSocket = () => {
 
       pc.ondatachannel = (event) => {
         const channel = event.channel
-        dataChannelRef.current = channel
+        dataChannelMap.current[remoteUserId] = channel
         console.debug(
           `Data channel established with remote user ${remoteUserId}:`,
           channel,
@@ -328,11 +328,11 @@ export const useSocket = () => {
       const dataChannel = pc.createDataChannel("fileTransfer", {
         ordered: true,
       })
-      dataChannelRef.current = dataChannel
+      dataChannelMap.current[remoteUserId] = dataChannel
 
       console.debug(
         "Data channel created at the time of creating the offer:",
-        dataChannelRef.current,
+        dataChannelMap.current[remoteUserId],
       )
 
       setupDataChannel(dataChannel)
@@ -515,6 +515,7 @@ export const useSocket = () => {
 
     addReceivedChunk(data as ArrayBuffer)
 
+    // getting the latest state snapshot
     const { receivedChunks, receivedFileInfo, receivedFile } =
       useFileStore.getState()
 
@@ -575,7 +576,7 @@ export const useSocket = () => {
   return {
     socketRef,
     peerConnections,
-    dataChannelRef,
+    dataChannelMap,
     status,
     isConnected,
     connectionStatus,

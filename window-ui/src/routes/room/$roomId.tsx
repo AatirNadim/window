@@ -54,14 +54,14 @@ export default function Room() {
 
   const {
     socketRef,
-    dataChannelRef,
+    dataChannelMap,
     isConnected,
     status,
     createWSConnection,
     peerConnections,
   } = useSocket()
 
-  const { sendFile } = useFile({ dataChannelRef })
+  const { sendFile } = useFile({ peerConnections, dataChannelMap })
 
   // Refs for core WebRTC objects
 
@@ -79,8 +79,8 @@ export default function Room() {
   const [dragOver, setDragOver] = useState(false)
 
   useEffect(() => {
-    console.log("datachannelRef.current state:", dataChannelRef.current)
-  }, [dataChannelRef.current])
+    console.log("dataChannelMap.current state:", dataChannelMap.current)
+  }, [dataChannelMap.current])
 
   useEffect(() => {
     if (!userId || !userName) {

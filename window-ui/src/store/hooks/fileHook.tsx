@@ -3,25 +3,42 @@ import { toast } from "sonner"
 import { CHUNK_SIZE } from "@/lib/constants"
 
 export const useFile = ({
-  dataChannelRef,
+  peerConnections,
+  dataChannelMap,
 }: {
-  dataChannelRef: React.RefObject<RTCDataChannel | null>
+  peerConnections: React.RefObject<Record<string, RTCPeerConnection | null>>
+  dataChannelMap: React.RefObject<Record<string, RTCDataChannel | null>>
 }) => {
   const { setTransferProgress, file, setFile, setIsSending } = useFileStore()
 
+  const sendFileUtil = (content: any) => {
+    for (const [remoteUserId, channel] of Object.entries(
+      dataChannelMap.current,
+    )) {
+      if (!channel) {
+        toast.error(`No data channel for user ${peerConnections.current[remoteUserId]}`)
+        continue
+      }
+
+      channel.send(content)
+    }
+  }
 
   const sendFile = () => {
     console.log("Sending file:", file)
-    console.log("Data channel state:", dataChannelRef.current)
+    console.log("Data channel state:", dataChannelMap.current)
 
-    if (
-      !file ||
-      !dataChannelRef.current ||
-      dataChannelRef.current.readyState !== "open"
-    ) {
-      toast.error("Cannot send file", {
-        description: "No file selected or connection not ready.",
-      })
+    for (const [remoteUserId, pc] of Object.entries(peerConnections.current)) {
+      if (!pc || !dataChannelMap.current[remoteUserId]) {
+        toast.error(
+          `No peer connection or data channel for user ${remoteUserId}`,
+        )
+      }
+    }
+
+    if (!file) {
+      toast.error("No file selected to send")
+      console.error("No file selected to send")
       return
     }
 
@@ -39,7 +56,7 @@ export const useFile = ({
       description: `Sending ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`,
     })
 
-    dataChannelRef.current.send(metadata)
+    sendFileUtil(metadata)
 
     // 2. Send file in chunks
     const fileReader = new FileReader()
@@ -47,7 +64,7 @@ export const useFile = ({
 
     fileReader.onload = (e) => {
       if (e.target?.result) {
-        dataChannelRef.current?.send(e.target.result as ArrayBuffer)
+        sendFileUtil(e.target.result as ArrayBuffer)
         offset += (e.target.result as ArrayBuffer).byteLength
         setTransferProgress((offset / file.size) * 100)
 
