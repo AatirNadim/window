@@ -16,7 +16,9 @@ export const useFile = ({
       dataChannelMap.current,
     )) {
       if (!channel) {
-        toast.error(`No data channel for user ${peerConnections.current[remoteUserId]}`)
+        toast.error(
+          `No data channel for user ${peerConnections.current[remoteUserId]}`,
+        )
         continue
       }
 
@@ -75,7 +77,6 @@ export const useFile = ({
             description: `${file.name} has been sent successfully.`,
           })
           setIsSending(false)
-          setFile(null) // Clear file input after sending
         }
       }
     }

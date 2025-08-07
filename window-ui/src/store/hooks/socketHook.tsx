@@ -565,10 +565,6 @@ export const useSocket = () => {
 
         console.log("received file info:", receivedFileInfo)
         console.log("received file metadata: ", receivedFile)
-
-        // Reset for next transfer
-        setReceivedFileInfo(null)
-        setTransferProgress(0)
       }
     }
   }

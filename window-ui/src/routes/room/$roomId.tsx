@@ -63,24 +63,15 @@ export default function Room() {
 
   const { sendFile } = useFile({ peerConnections, dataChannelMap })
 
-  // Refs for core WebRTC objects
-
-  // useEffect(() => {
-  //   if (!roomId) {
-  //     toast.error("Room ID is required", {
-  //       description: "Please provide a valid room ID to join.",
-  //     })
-  //     navigate({ to: "/" })
-  //     return
-  //   }
-  //   setRoomId(roomId)
-  // }, [roomId, navigate])
-
   const [dragOver, setDragOver] = useState(false)
 
   useEffect(() => {
-    console.log("dataChannelMap.current state:", dataChannelMap.current)
-  }, [dataChannelMap.current])
+    console.debug("Transfer progress updated:", transferProgress)
+  }, [transferProgress])
+
+  useEffect(() => {
+    console.log("sending state changed:", isSending)
+  }, [isSending])
 
   useEffect(() => {
     if (!userId || !userName) {
@@ -118,7 +109,6 @@ export default function Room() {
       )
       socketRef.current?.close()
       clearRemoteUsers()
-      setFile(null) // Clear file input when leaving room
       setRoomId(null)
       resetFileStore() // Reset file state when leaving room
       leaveRoom()
@@ -129,6 +119,8 @@ export default function Room() {
 
   // --- File Sending Logic ---
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    resetFileStore()
+
     if (e.target.files?.[0]) {
       setFile(e.target.files[0])
     }
@@ -339,7 +331,7 @@ export default function Room() {
                       className="absolute top-3 right-3 p-1 rounded-full bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
                       onClick={(e) => {
                         e.preventDefault()
-                        setFile(null)
+                        resetFileStore()
                       }}
                     >
                       <XCircle className="h-5 w-5 text-red-500" />
