@@ -35,13 +35,10 @@ export const useSocket = () => {
   } = useUserStore()
 
   const {
-    receivedFile,
     setTransferProgress,
-    receivedFileInfo,
     setReceivedFileInfo,
     addReceivedChunk,
     clearReceivedChunks,
-    receivedChunks,
     setReceivedFile,
   } = useFileStore()
 
@@ -517,11 +514,14 @@ export const useSocket = () => {
     // Otherwise, it's a file chunk (ArrayBuffer)
 
     addReceivedChunk(data as ArrayBuffer)
+
+    const { receivedChunks, receivedFileInfo, receivedFile } =
+      useFileStore.getState()
+
     const receivedSize = receivedChunks.reduce(
       (acc, chunk) => acc + chunk.byteLength,
       0,
     )
-
     if (receivedFileInfo) {
       console.log("Received file metadata:", receivedFileInfo)
     } else {
@@ -563,7 +563,7 @@ export const useSocket = () => {
         document.body.removeChild(a)
 
         console.log("received file info:", receivedFileInfo)
-        console.log("receieved file metadata: ", receivedFile)
+        console.log("received file metadata: ", receivedFile)
 
         // Reset for next transfer
         setReceivedFileInfo(null)
