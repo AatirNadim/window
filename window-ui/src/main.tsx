@@ -9,6 +9,8 @@ import "./styles.css"
 
 // @ts-expect-error
 import "@fontsource/inter"
+// @ts-expect-error
+import "@fontsource/montserrat"
 import reportWebVitals from "./reportWebVitals.ts"
 import { ThemeProvider } from "./components/theme-provider.tsx"
 import { Toaster } from "./components/ui/sonner.tsx"
