@@ -57,6 +57,8 @@ export const useSocket = () => {
         return
       }
 
+      console.log("room created with ID:", roomId)
+
       const wsProtocol = window.location.protocol === "https:" ? "wss" : "ws"
       const socket = new WebSocket(`${wsProtocol}://${serverPath}`)
       socketRef.current = socket
@@ -191,20 +193,8 @@ export const useSocket = () => {
       // registering peer connection event handlers
 
       pc.onicecandidate = (event) => {
-        console.log(
-          "sending ice candidate for user:",
-          remoteUserId,
-          event.candidate,
-          socketRef.current,
-        )
-
         if (event.candidate && socketRef.current) {
-          console.debug(
-            "Sending ICE candidate:",
-            event.candidate,
-            "to remote user:",
-            remoteUserId,
-          )
+          console.debug("Sending ICE candidate:", "to remote user:")
           sendWsMessage({
             type: "ice-candidate",
             roomId,
@@ -214,8 +204,6 @@ export const useSocket = () => {
           })
         }
       }
-
-      // Add after pc.onconnectionstatechange
 
       pc.onconnectionstatechange = () => {
         switch (pc.connectionState) {
@@ -271,6 +259,11 @@ export const useSocket = () => {
       pc.ondatachannel = (event) => {
         const channel = event.channel
         dataChannelRef.current = channel
+        console.debug(
+          `Data channel established with remote user ${remoteUserId}:`,
+          channel,
+        )
+
         setupDataChannel(channel)
       }
 
@@ -312,6 +305,8 @@ export const useSocket = () => {
 
   const createOffer = async (remoteUserId: string) => {
     try {
+      console.debug("Creating offer for remote user:", remoteUserId)
+
       if (!userId || !userName) {
         throw new Error("User not initialized")
       }
@@ -337,6 +332,12 @@ export const useSocket = () => {
         ordered: true,
       })
       dataChannelRef.current = dataChannel
+
+      console.debug(
+        "Data channel created at the time of creating the offer:",
+        dataChannelRef.current,
+      )
+
       setupDataChannel(dataChannel)
 
       console.debug("Creating offer for remote user:", remoteUserId)
@@ -370,6 +371,8 @@ export const useSocket = () => {
         throw new Error("User not initialized")
       }
 
+      console.log("Handling offer from remote user:", msg.fromUserId)
+
       const { fromUserId, offer } = msg
       let pc = peerConnections.current[fromUserId]
 
@@ -377,19 +380,20 @@ export const useSocket = () => {
       if (!pc) {
         createPeerConnection(msg.fromUserId, msg.fromUserName)
         pc = peerConnections.current[fromUserId]
+        console.log("Created new peer connection for user:", fromUserId)
       }
 
-      console.debug("Handling offer from remote user:", fromUserId)
-      console.debug("Received offer:", offer)
+      console.log("Handling offer from remote user:", fromUserId)
+      console.log("Received offer:", offer)
 
       await pc.setRemoteDescription(new RTCSessionDescription(offer))
 
-      console.debug("Remote description set with offer:", offer)
+      console.log("Remote description set with offer:", offer)
 
       // Create an answer to send back
       const answer = await pc.createAnswer()
       await pc.setLocalDescription(answer)
-      console.debug("Created answer:", answer)
+      console.log("Created answer:", answer)
 
       sendWsMessage({
         type: "answer",
@@ -445,13 +449,9 @@ export const useSocket = () => {
         return
       }
 
-      console.debug("Handling ICE candidate from remote user:", msg.fromUserId)
-
-      console.debug("Received ICE candidate:", msg.candidate)
-
       await pc.addIceCandidate(new RTCIceCandidate(msg.candidate))
 
-      console.debug("ICE candidate added to peer connection:", msg.candidate)
+      console.debug("ICE candidate added to peer connection")
     } catch (error) {
       console.error("Error handling ICE candidate:", error)
       // toast.error('ICE Candidate Handling Failed', {
@@ -499,9 +499,12 @@ export const useSocket = () => {
   }
 
   const handleReceiveMessage = (data: any) => {
+    console.log("received data at the receiver:", data, typeof data)
+
     // If data is a string, it's metadata.
     if (typeof data === "string") {
       const metadata = JSON.parse(data)
+
       setReceivedFileInfo(metadata)
       clearReceivedChunks()
       setTransferProgress(0)
@@ -520,7 +523,23 @@ export const useSocket = () => {
     )
 
     if (receivedFileInfo) {
+      console.log("Received file metadata:", receivedFileInfo)
+    } else {
+      console.log(
+        "No metadata received yet, waiting for metadata...",
+        receivedFileInfo,
+      )
+    }
+
+    if (receivedFileInfo) {
       setTransferProgress((receivedSize / receivedFileInfo.size) * 100)
+
+      console.log(
+        "received file size:",
+        receivedSize,
+        "expected size:",
+        receivedFileInfo.size,
+      )
 
       // If all chunks received, assemble the file
       if (receivedSize === receivedFileInfo.size) {
@@ -539,6 +558,7 @@ export const useSocket = () => {
         a.href = url
         a.download = receivedFileInfo.name
         document.body.appendChild(a)
+        console.log("Downloading file:", receivedFileInfo.name)
         a.click()
         document.body.removeChild(a)
 

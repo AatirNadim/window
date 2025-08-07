@@ -38,48 +38,51 @@ export const Route = createFileRoute("/room/$roomId")({
 
 export default function Room() {
   const navigate = useNavigate()
-  const { roomId } = Route.useParams()
 
   // Zustand store
+  const { userId, userName, leaveRoom, clearRemoteUsers, roomId, setRoomId } =
+    useUserStore()
+
   const {
-    userId,
-    userName,
-    initializeUser,
-    leaveRoom,
-    clearRemoteUsers,
-    setRoomId,
-  } = useUserStore()
-
-  const { sendFile } = useFile()
-
-  const { file, receivedFileInfo, setFile, transferProgress, isSending } = useFileStore()
+    file,
+    receivedFileInfo,
+    setFile,
+    transferProgress,
+    isSending,
+    resetFileStore,
+  } = useFileStore()
 
   const {
     socketRef,
+    dataChannelRef,
     isConnected,
     status,
     createWSConnection,
     peerConnections,
   } = useSocket()
 
+  const { sendFile } = useFile({ dataChannelRef })
+
   // Refs for core WebRTC objects
 
-  useEffect(() => {
-    if (!roomId) {
-      toast.error("Room ID is required", {
-        description: "Please provide a valid room ID to join.",
-      })
-      navigate({ to: "/" })
-      return
-    }
-    setRoomId(roomId)
-  }, [roomId, navigate])
+  // useEffect(() => {
+  //   if (!roomId) {
+  //     toast.error("Room ID is required", {
+  //       description: "Please provide a valid room ID to join.",
+  //     })
+  //     navigate({ to: "/" })
+  //     return
+  //   }
+  //   setRoomId(roomId)
+  // }, [roomId, navigate])
 
   const [dragOver, setDragOver] = useState(false)
 
   useEffect(() => {
-    initializeUser()
+    console.log("datachannelRef.current state:", dataChannelRef.current)
+  }, [dataChannelRef.current])
 
+  useEffect(() => {
     if (!userId || !userName) {
       toast.error("User Initialization Failed", {
         description:
@@ -103,6 +106,9 @@ export default function Room() {
   const cleanUp = () => {
     try {
       Object.values(peerConnections.current).forEach((pc) => pc.close())
+
+      console.log("leaving room:", roomId)
+
       socketRef.current?.send(
         JSON.stringify({
           type: "leave-room",
@@ -112,6 +118,9 @@ export default function Room() {
       )
       socketRef.current?.close()
       clearRemoteUsers()
+      setFile(null) // Clear file input when leaving room
+      setRoomId(null)
+      resetFileStore() // Reset file state when leaving room
       leaveRoom()
     } catch (error) {
       console.error("Error cleaning up WebSocket connection:", error)

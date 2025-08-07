@@ -1,6 +1,5 @@
 import { v4 as uuidv4 } from "uuid"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { useState } from "react"
 import { motion } from "framer-motion"
 import { toast } from "sonner"
 import { Share2, Plus, ArrowRight, Sparkles, Shield, Zap } from "lucide-react"
@@ -21,14 +20,13 @@ export const Route = createFileRoute("/")({
 })
 
 export default function Home() {
-  const [roomId, setRoomId] = useState("")
-
   const navigate = useNavigate()
-  const { initializeUser } = useUserStore()
+  const { initializeUser, roomId, setRoomId } = useUserStore()
 
   // UUID validation function
   const isValidUUID = (str: string): boolean => {
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
     return uuidRegex.test(str)
   }
 
@@ -48,7 +46,7 @@ export default function Home() {
   }
 
   const handleJoinRoom = () => {
-    if (!roomId.trim()) {
+    if (!roomId?.trim()) {
       toast.error("Invalid Room ID", {
         description: "Please enter a room ID to join.",
       })
@@ -62,6 +60,8 @@ export default function Home() {
       })
       return
     }
+
+    initializeUser()
 
     navigate({ to: `/room/${roomId}` })
 
@@ -239,7 +239,7 @@ export default function Home() {
                 <Input
                   type="text"
                   placeholder="Enter Room ID"
-                  value={roomId}
+                  value={roomId || ""}
                   onChange={(e) => setRoomId(e.target.value)}
                   className="flex-1 h-12 bg-white/50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-400 transition-colors"
                   onKeyPress={(e) => e.key === "Enter" && handleJoinRoom()}

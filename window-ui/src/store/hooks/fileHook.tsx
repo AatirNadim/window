@@ -1,17 +1,19 @@
-import { useState } from "react"
 import { useFileStore } from "../fileStore"
 import { toast } from "sonner"
-import { useSocket } from "./socketHook"
 import { CHUNK_SIZE } from "@/lib/constants"
 
-export const useFile = () => {
-  
-
+export const useFile = ({
+  dataChannelRef,
+}: {
+  dataChannelRef: React.RefObject<RTCDataChannel | null>
+}) => {
   const { setTransferProgress, file, setFile, setIsSending } = useFileStore()
 
-  const { dataChannelRef } = useSocket()
 
   const sendFile = () => {
+    console.log("Sending file:", file)
+    console.log("Data channel state:", dataChannelRef.current)
+
     if (
       !file ||
       !dataChannelRef.current ||
