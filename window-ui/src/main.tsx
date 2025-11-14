@@ -41,11 +41,10 @@ if (rootElement && !rootElement.innerHTML) {
     <ThemeProvider>
       <RouterProvider router={router} />
       <Toaster
-        closeButton={true}
+        closeButton
         position="top-right"
-        richColors={true}
+        richColors
         duration={2000}
-        
       />
     </ThemeProvider>,
     // </StrictMode>,
