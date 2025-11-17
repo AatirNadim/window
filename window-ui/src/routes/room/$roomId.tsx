@@ -1,15 +1,12 @@
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import { toast } from "sonner"
-import { motion, AnimatePresence } from "framer-motion"
+import { motion } from "framer-motion"
 import {
-  FileUp,
   Link,
-  XCircle,
   Send,
   Wifi,
   WifiOff,
   ArrowLeft,
-  CheckCircle,
   Clock,
   Users,
   User,
@@ -26,11 +23,13 @@ import {
   CardDescription,
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Progress } from "@/components/ui/progress"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { useFileStore } from "@/store/fileStore"
 import { useFile } from "@/store/hooks/fileHook"
 import { useSocket } from "@/store/hooks/socketHook"
+import GradientBackground from "@/components/home/gradientBackground"
+import BackgroundElementsAnimated from "@/components/home/backgroundElementsAnimated"
+import FileUpload from "@/components/room/fileUpload"
 
 export const Route = createFileRoute("/room/$roomId")({
   component: Room,
@@ -45,8 +44,6 @@ export default function Room() {
 
   const {
     file,
-    receivedFileInfo,
-    setFile,
     transferProgress,
     isSending,
     resetFileStore,
@@ -63,7 +60,7 @@ export default function Room() {
 
   const { sendFile } = useFile({ peerConnections, dataChannelMap })
 
-  const [dragOver, setDragOver] = useState(false)
+  
 
   useEffect(() => {
     console.debug("Transfer progress updated:", transferProgress)
@@ -117,24 +114,7 @@ export default function Room() {
     }
   }
 
-  // --- File Sending Logic ---
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    resetFileStore()
 
-    if (e.target.files?.[0]) {
-      setFile(e.target.files[0])
-    }
-  }
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault()
-    setDragOver(false)
-
-    const files = e.dataTransfer.files
-    if (files.length > 0) {
-      setFile(files[0])
-    }
-  }
 
   const getStatusIcon = () => {
     if (isConnected) return <Wifi className="w-4 h-4 text-green-500" />
@@ -155,37 +135,11 @@ export default function Room() {
   return (
     <div className="min-h-screen relative overflow-hidden min-w-lg">
       {/* Background with gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-blue-900/20 dark:to-purple-900/20" />
+      <GradientBackground />
 
       {/* Animated background elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <motion.div
-          className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-purple-400/20 rounded-full blur-3xl"
-          animate={{
-            scale: [1, 1.2, 1],
-            rotate: [0, 180, 360],
-          }}
-          transition={{
-            duration: 20,
-            repeat: Number.POSITIVE_INFINITY,
-            ease: "linear",
-          }}
-        />
-        <motion.div
-          className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-purple-400/20 to-pink-400/20 rounded-full blur-3xl"
-          animate={{
-            scale: [1.2, 1, 1.2],
-            rotate: [360, 180, 0],
-          }}
-          transition={{
-            duration: 25,
-            repeat: Number.POSITIVE_INFINITY,
-            ease: "linear",
-          }}
-        />
-      </div>
+      <BackgroundElementsAnimated />  
 
-      {/* Theme toggle */}
       <div className="absolute top-6 right-6 z-10">
         <ThemeToggle />
       </div>
@@ -218,7 +172,7 @@ export default function Room() {
                       variant="ghost"
                       size="sm"
                       onClick={() => {
-                        navigator.clipboard.writeText(roomId)
+                        navigator.clipboard.writeText(roomId || "roomid missing")
                         toast.success("Room ID Copied", {
                           description: "Room ID has been copied to clipboard",
                         })
@@ -280,65 +234,7 @@ export default function Room() {
 
             <CardContent className="space-y-6">
               {/* File Upload Area */}
-              <motion.div
-                className={`relative p-8 border-2 border-dashed rounded-xl text-center transition-all duration-300 ${
-                  dragOver
-                    ? "border-blue-500 bg-blue-50/50 dark:bg-blue-900/20"
-                    : "border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500"
-                } ${!isConnected ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
-                onDrop={handleDrop}
-                onDragOver={(e) => {
-                  e.preventDefault()
-                  setDragOver(true)
-                }}
-                onDragLeave={() => setDragOver(false)}
-                whileHover={isConnected ? { scale: 1.02 } : {}}
-                whileTap={isConnected ? { scale: 0.98 } : {}}
-              >
-                <input
-                  type="file"
-                  id="file-input"
-                  className="hidden"
-                  onChange={handleFileChange}
-                  disabled={isSending || !isConnected}
-                />
-                <label
-                  htmlFor="file-input"
-                  className={`cursor-pointer ${isSending || !isConnected ? "cursor-not-allowed" : ""}`}
-                >
-                  <motion.div
-                    animate={dragOver ? { scale: 1.1 } : { scale: 1 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <FileUp className="mx-auto h-16 w-16 text-gray-400 dark:text-gray-500 mb-4" />
-                  </motion.div>
-                  <span className="block text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-                    {file ? file.name : "Drop files here or click to select"}
-                  </span>
-                  <span className="text-sm text-gray-500 dark:text-gray-400">
-                    {file
-                      ? `${(file.size / 1024 / 1024).toFixed(2)} MB`
-                      : "Any file type, any size"}
-                  </span>
-                </label>
-
-                <AnimatePresence>
-                  {file && (
-                    <motion.button
-                      initial={{ opacity: 0, scale: 0 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0 }}
-                      className="absolute top-3 right-3 p-1 rounded-full bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
-                      onClick={(e) => {
-                        e.preventDefault()
-                        resetFileStore()
-                      }}
-                    >
-                      <XCircle className="h-5 w-5 text-red-500" />
-                    </motion.button>
-                  )}
-                </AnimatePresence>
-              </motion.div>
+              <FileUpload />
 
               {/* Send Button */}
               <motion.div
@@ -375,40 +271,7 @@ export default function Room() {
               </motion.div>
 
               {/* Progress Section */}
-              <AnimatePresence>
-                {(isSending || transferProgress > 0) && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="space-y-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl border border-blue-200/50 dark:border-blue-700/50"
-                  >
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                        {isSending ? "Sending" : "Receiving"}:{" "}
-                        {file?.name || receivedFileInfo?.name}
-                      </p>
-                      <span className="text-sm text-gray-600 dark:text-gray-400">
-                        {Math.round(transferProgress)}%
-                      </span>
-                    </div>
-                    <Progress
-                      value={transferProgress}
-                      className="h-3 bg-white/50 dark:bg-gray-800/50"
-                    />
-                    {transferProgress === 100 && (
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="flex items-center justify-center text-green-600 dark:text-green-400"
-                      >
-                        <CheckCircle className="w-5 h-5 mr-2" />
-                        <span className="font-medium">Transfer Complete!</span>
-                      </motion.div>
-                    )}
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              
 
               {/* Connection Status Info */}
               <div className="text-center p-4 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800/50 dark:to-gray-700/50 rounded-xl">
