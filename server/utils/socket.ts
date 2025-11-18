@@ -16,10 +16,13 @@ import {
 } from "./types";
 
 export class SocketService {
-  constructor(
-    private rooms: Map<string, Room>,
-    private userSockets: Map<string, ExtendedWebSocket>
-  ) {}
+  private rooms: Map<string, Room>;
+  private userSockets: Map<string, ExtendedWebSocket>;
+  
+  constructor() {
+    this.rooms = new Map<string, Room>();
+    this.userSockets = new Map<string, ExtendedWebSocket>();
+  }
 
   cleanupUser(userId: string, roomId?: string) {
     // Remove user from userSockets

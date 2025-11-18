@@ -5,13 +5,13 @@ import { v4 as uuidv4 } from "uuid"
 interface UserState {
   userId: string | null
   userName: string | null
-  // currentRoomId: string | null
 
   roomId: string | null
 
   remoteUsers: Record<string, string>
+}
 
-  // Actions
+interface UserAction {
   initializeUser: () => void
   joinRoom: (roomId: string) => void
   leaveRoom: () => void
@@ -65,7 +65,7 @@ const generateRandomUsername = (): string => {
   return `${adjective}${noun}${number}`
 }
 
-export const useUserStore = create<UserState>()(
+export const useUserStore = create<UserState & UserAction>()(
   persist(
     (set, get) => ({
       userId: null,
@@ -88,7 +88,7 @@ export const useUserStore = create<UserState>()(
         }
       },
 
-      joinRoom: (roomId: string) => {
+      joinRoom: () => {
         const state = get()
 
         // Initialize user if not already done
@@ -96,24 +96,15 @@ export const useUserStore = create<UserState>()(
           set({
             userId: uuidv4(),
             userName: generateRandomUsername(),
-            // currentRoomId: roomId,
           })
         }
-        // else {
-        //   set({
-        //     // currentRoomId: roomId,
-        //   })
-        // }
       },
 
       leaveRoom: () => {
         set({
-          // currentRoomId: null,
-          // Clear userId when leaving room as requested
           userId: null,
           userName: null,
         })
-        // Note: userName persists even after leaving room
       },
 
       clearUser: () => {
@@ -134,14 +125,16 @@ export const useUserStore = create<UserState>()(
 
       removeRemoteUser: (userId: string) => {
         set((state) => {
-          const { [userId]: _, ...remainingUsers } = state.remoteUsers || {}
-          return { remoteUsers: remainingUsers }
+          const next = { ...state.remoteUsers }
+          delete next[userId]
+          return { remoteUsers: next }
         })
       },
 
       clearRemoteUsers: () => {
         set({ remoteUsers: {} })
       },
+
       setRoomId: (roomId: string | null) => {
         set({ roomId })
       },
@@ -149,11 +142,10 @@ export const useUserStore = create<UserState>()(
     {
       name: "window-user-storage",
       storage: createJSONStorage(() => localStorage),
-      // Only persist userName, userId and currentRoomId will be regenerated
+      // Only persist userName; userId and currentRoomId will be regenerated
       partialize: (state) => ({
         userName: state.userName,
         userId: state.userId,
-        // Don't persist userId or currentRoomId as they should be session-specific
       }),
     },
   ),

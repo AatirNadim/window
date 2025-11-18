@@ -1,10 +1,11 @@
-import { useRef, useState } from "react"
+import { useMemo, useRef, useState } from "react"
 import { useUserStore } from "../userStore"
 import { serverPath } from "@/lib/constants"
 import type {
   AnswerMessage,
   IceCandidateMessage,
   JoinRoomMessage,
+  LeaveRoomMessage,
   OfferMessage,
   UserLeftMessage,
   WebSocketMessage,
@@ -28,11 +29,15 @@ export const useSocket = () => {
     userId,
     userName,
     roomId,
+    setRoomId,
     remoteUsers,
     addRemoteUser,
     removeRemoteUser,
     clearRemoteUsers,
+    leaveRoom,
   } = useUserStore()
+
+  const { resetFileStore } = useFileStore()
 
   const {
     setTransferProgress,
@@ -41,6 +46,50 @@ export const useSocket = () => {
     clearReceivedChunks,
     setReceivedFile,
   } = useFileStore()
+
+  const registerListenersForSocket = useMemo(
+    () => (socket: WebSocket) => {
+      try {
+        socket.onopen = () => {
+          setStatus("Joining room...")
+
+          const msg: JoinRoomMessage = {
+            type: "join-room",
+            roomId,
+            userId,
+            userName,
+          }
+
+          console.log("Joining room with message: ", msg)
+          // Join the room automatically with user info
+          socket.send(JSON.stringify(msg))
+
+          console.debug("WebSocket connection established")
+          setStatus("Joined room, waiting for other users...")
+        }
+
+        socket.onmessage = (event) => {
+          const message = JSON.parse(event.data)
+          handleSignalingMessage(message)
+        }
+
+        socket.onclose = () => {
+          setStatus("Disconnected from server")
+          setIsConnected(false)
+        }
+
+        socket.onerror = () => {
+          toast.error("Connection Error", {
+            description: "Failed to connect to signaling server",
+          })
+          setStatus("Connection failed")
+        }
+      } catch (error) {
+        console.error("Error registering WebSocket listeners:", error)
+      }
+    },
+    [],
+  )
 
   const createWSConnection = () => {
     try {
@@ -60,43 +109,14 @@ export const useSocket = () => {
       const socket = new WebSocket(`${wsProtocol}://${serverPath}`)
       socketRef.current = socket
 
-      socket.onopen = () => {
-        setStatus("Joining room...")
-
-        const msg: JoinRoomMessage = {
-          type: "join-room",
-          roomId,
-          userId,
-          userName,
-        }
-
-        console.log("Joining room with message: ", msg)
-        // Join the room automatically with user info
-        socket.send(JSON.stringify(msg))
-      }
-
-      socket.onmessage = (event) => {
-        const message = JSON.parse(event.data)
-        handleSignalingMessage(message)
-      }
-
-      socket.onclose = () => {
-        setStatus("Disconnected from server")
-        setIsConnected(false)
-      }
-
-      socket.onerror = () => {
-        toast.error("Connection Error", {
-          description: "Failed to connect to signaling server",
-        })
-        setStatus("Connection failed")
-      }
+      registerListenersForSocket(socket)
     } catch (error) {
       console.error("Error creating WebSocket connection:", error)
       toast.error("Connection Error", {
         description: "Failed to connect to signaling server",
       })
       setStatus("Connection failed")
+      throw error
     }
   }
 
@@ -112,7 +132,8 @@ export const useSocket = () => {
           description: `A new user, ${message.userName}, with ID ${message.userId} joined the room.`,
         })
 
-        setStatus("A user has joined the room")
+        // setStatus("A user has joined the room")
+        setStatus("Connected to peer(s)...")
         break
 
       case "offer":
@@ -122,6 +143,7 @@ export const useSocket = () => {
 
       case "answer":
         await handleAnswer(message)
+        setStatus("Connected to peer(s)...")
         break
 
       case "ice-candidate":
@@ -220,12 +242,18 @@ export const useSocket = () => {
             )
             setConnectionStatus("connecting")
             removeRemoteUser(remoteUserId)
-            setStatus(`Reconnecting to ${remoteUserId}...`)
+            toast.error("User Disconnected", {
+              description: `Connection with user ${remoteUserName} lost.`,
+            })
+            // setStatus(`Reconnecting to ${remoteUserId}...`)
             break
           case "closed":
             console.warn(`Connection with remote user ${remoteUserId} closed.`)
             setIsConnected(false)
-            setStatus("Connection closed")
+            toast.info("Connection Closed", {
+              description: `Connection with user ${remoteUserName} has been closed.`,
+            })
+            // setStatus("Connection closed with ")
 
             clearRemoteUsers()
             break
@@ -241,9 +269,18 @@ export const useSocket = () => {
           `ICE connection state with ${remoteUserId}: ${pc.iceConnectionState}`,
         )
 
-        if (pc.iceConnectionState === "failed") {
-          console.error("ICE connection failed, attempting restart")
-          pc.restartIce()
+        switch (pc.iceConnectionState) {
+          case "disconnected":
+            // setStatus("Reconnecting...")
+            toast.warning("ICE Disconnected", {
+              description: `ICE connection with user ${remoteUserName} disconnected.`,
+            })
+            setConnectionStatus("disconnected")
+            break
+          case "failed":
+            console.error("ICE connection failed, attempting restart")
+            pc.restartIce()
+            break
         }
       }
 
@@ -261,7 +298,7 @@ export const useSocket = () => {
           channel,
         )
 
-        setupDataChannel(channel)
+        registerDataChannelListeners(channel)
       }
 
       pc.onconnectionstatechange = () => {
@@ -335,7 +372,7 @@ export const useSocket = () => {
         dataChannelMap.current[remoteUserId],
       )
 
-      setupDataChannel(dataChannel)
+      registerDataChannelListeners(dataChannel)
 
       console.debug("Creating offer for remote user:", remoteUserId)
 
@@ -358,7 +395,7 @@ export const useSocket = () => {
       toast.error("Offer Creation Failed", {
         description: "Failed to create WebRTC offer.",
       })
-      setStatus("Offer creation failed")
+      // setStatus("Offer creation failed")
     }
   }
 
@@ -429,7 +466,7 @@ export const useSocket = () => {
       toast.error("Answer Handling Failed", {
         description: "Failed to handle WebRTC answer.",
       })
-      setStatus("Answer handling failed")
+      // setStatus("Answer handling failed")
     }
   }
 
@@ -451,19 +488,20 @@ export const useSocket = () => {
       console.debug("ICE candidate added to peer connection")
     } catch (error) {
       console.error("Error handling ICE candidate:", error)
-      // toast.error('ICE Candidate Handling Failed', {
-      //   description: 'Failed to handle WebRTC ICE candidate.',
-      // })
-      setStatus("ICE candidate handling failed")
+      toast.error("ICE Candidate Handling Failed", {
+        description: "Failed to handle WebRTC ICE candidate.",
+      })
+      // setStatus("ICE candidate handling failed")
     }
   }
 
   const handleRemoteUserLeft = (msg: UserLeftMessage) => {
+    console.log("recieved an event that remote user left the room:", msg)
     const remoteUserId = msg.userId
     try {
       peerConnections.current[remoteUserId]?.close()
       delete peerConnections.current[remoteUserId]
-
+      delete dataChannelMap.current[remoteUserId]
       console.debug(
         `Remote user ${remoteUserId} has left the room. Peer connection closed.`,
       )
@@ -473,13 +511,13 @@ export const useSocket = () => {
       })
     } catch (error) {
       console.error("Error handling remote user left:", error)
-      toast.error("Remote User Left", {
-        description: `User with ID ${remoteUserId} has left the room.`,
+      toast.error("Error handling Remote User Left", {
+        description: `Failed to handle remote user ${remoteUserId} leaving the room.: ${error}`,
       })
     }
   }
 
-  const setupDataChannel = (channel: RTCDataChannel) => {
+  const registerDataChannelListeners = (channel: RTCDataChannel) => {
     channel.onopen = () => {
       setStatus("Connection established! Ready to share.")
       setIsConnected(true)
@@ -569,6 +607,29 @@ export const useSocket = () => {
     }
   }
 
+  const cleanUp = () => {
+    try {
+      Object.values(peerConnections.current).forEach((pc) => pc.close())
+
+      console.log("leaving room:", roomId)
+
+      socketRef.current?.send(
+        JSON.stringify({
+          type: "leave-room",
+          roomId,
+          userId,
+        } as LeaveRoomMessage),
+      )
+      socketRef.current?.close()
+      clearRemoteUsers()
+      setRoomId(null)
+      resetFileStore() // Reset file state when leaving room
+      leaveRoom()
+    } catch (error) {
+      console.error("Error cleaning up WebSocket connection:", error)
+    }
+  }
+
   return {
     socketRef,
     peerConnections,
@@ -585,5 +646,6 @@ export const useSocket = () => {
     handleAnswer,
     handleIceCandidate,
     handleRemoteUserLeft,
+    cleanUp,
   }
 }

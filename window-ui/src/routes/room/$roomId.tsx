@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+import { useEffect, useMemo } from "react"
 import { toast } from "sonner"
 import { motion } from "framer-motion"
 import {
@@ -13,7 +13,6 @@ import {
   Copy,
 } from "lucide-react"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import type { LeaveRoomMessage } from "@/types"
 import { useUserStore } from "@/store"
 import {
   Card,
@@ -30,6 +29,7 @@ import { useSocket } from "@/store/hooks/socketHook"
 import GradientBackground from "@/components/home/gradientBackground"
 import BackgroundElementsAnimated from "@/components/home/backgroundElementsAnimated"
 import FileUpload from "@/components/room/fileUpload"
+import ProgressSection from "@/components/room/progress"
 
 export const Route = createFileRoute("/room/$roomId")({
   component: Room,
@@ -39,36 +39,28 @@ export default function Room() {
   const navigate = useNavigate()
 
   // Zustand store
-  const { userId, userName, leaveRoom, clearRemoteUsers, roomId, setRoomId } =
-    useUserStore()
+  const { userId, userName, roomId, remoteUsers } = useUserStore()
+
+  const { file, receivedFileInfo, transferProgress, isSending } = useFileStore()
 
   const {
-    file,
-    transferProgress,
-    isSending,
-    resetFileStore,
-  } = useFileStore()
-
-  const {
-    socketRef,
     dataChannelMap,
     isConnected,
     status,
     createWSConnection,
     peerConnections,
+    cleanUp,
   } = useSocket()
 
   const { sendFile } = useFile({ peerConnections, dataChannelMap })
 
-  
+  // useEffect(() => {
+  //   console.debug("Transfer progress updated:", transferProgress)
+  // }, [transferProgress])
 
-  useEffect(() => {
-    console.debug("Transfer progress updated:", transferProgress)
-  }, [transferProgress])
-
-  useEffect(() => {
-    console.log("sending state changed:", isSending)
-  }, [isSending])
+  // useEffect(() => {
+  //   console.log("sending state changed:", isSending)
+  // }, [isSending])
 
   useEffect(() => {
     if (!userId || !userName) {
@@ -79,10 +71,20 @@ export default function Room() {
       return
     }
 
+    // Full page unload (refresh, close tab, navigate to another origin, etc.)
+    window.addEventListener("beforeunload", cleanUp)
+
     console.debug("creating socket connection for room:", roomId)
 
-    createWSConnection()
-    window.addEventListener("beforeunload", cleanUp)
+    try {
+      createWSConnection()
+    } catch (error) {
+      console.error(
+        "In the room component, socket connection failed with error:",
+        error,
+      )
+      navigate({ to: "/" })
+    }
 
     return () => {
       // Leave room and clear userId when navigating away
@@ -91,46 +93,21 @@ export default function Room() {
     }
   }, [roomId, userId])
 
-  const cleanUp = () => {
-    try {
-      Object.values(peerConnections.current).forEach((pc) => pc.close())
-
-      console.log("leaving room:", roomId)
-
-      socketRef.current?.send(
-        JSON.stringify({
-          type: "leave-room",
-          roomId,
-          userId,
-        } as LeaveRoomMessage),
-      )
-      socketRef.current?.close()
-      clearRemoteUsers()
-      setRoomId(null)
-      resetFileStore() // Reset file state when leaving room
-      leaveRoom()
-    } catch (error) {
-      console.error("Error cleaning up WebSocket connection:", error)
-    }
-  }
-
-
-
-  const getStatusIcon = () => {
+  const getStatusIcon = useMemo(() => {
     if (isConnected) return <Wifi className="w-4 h-4 text-green-500" />
     if (status.includes("Connecting") || status.includes("Joining"))
       return <Clock className="w-4 h-4 text-yellow-500 animate-spin" />
     if (status.includes("failed") || status.includes("Disconnected"))
       return <WifiOff className="w-4 h-4 text-red-500" />
     return <Users className="w-4 h-4 text-blue-500" />
-  }
+  }, [isConnected, status])
 
-  const getStatusColor = () => {
+  const getStatusColor = useMemo(() => {
     if (isConnected) return "bg-green-500"
     if (status.includes("failed") || status.includes("Disconnected"))
       return "bg-red-500"
     return "bg-yellow-500"
-  }
+  }, [isConnected, status])
 
   return (
     <div className="min-h-screen relative overflow-hidden min-w-lg">
@@ -138,14 +115,14 @@ export default function Room() {
       <GradientBackground />
 
       {/* Animated background elements */}
-      <BackgroundElementsAnimated />  
+      <BackgroundElementsAnimated />
 
       <div className="absolute top-6 right-6 z-10">
         <ThemeToggle />
       </div>
 
       {/* Main content */}
-      <div className="relative z-10 container mx-auto p-4 flex justify-center items-center min-h-screen">
+      <div className="relative z-10 container mx-auto p-4 flex justify-center items-stretch gap-4 min-h-screen">
         <motion.div
           initial={{ opacity: 0, y: 20, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -162,7 +139,10 @@ export default function Room() {
                       <Link className="w-5 h-5 text-white" />
                     </div>
                   </div>
-                  <span>Room: {roomId}</span>
+                  <span className="flex justify-center items-start gap-3">
+                    <span>Room: </span>
+                    <span className="break-all">{roomId}</span>
+                  </span>
                   <motion.div
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
@@ -172,7 +152,9 @@ export default function Room() {
                       variant="ghost"
                       size="sm"
                       onClick={() => {
-                        navigator.clipboard.writeText(roomId || "roomid missing")
+                        navigator.clipboard.writeText(
+                          roomId || "roomid missing",
+                        )
                         toast.success("Room ID Copied", {
                           description: "Room ID has been copied to clipboard",
                         })
@@ -209,13 +191,13 @@ export default function Room() {
                       repeat: Number.POSITIVE_INFINITY,
                     }}
                   >
-                    {getStatusIcon()}
+                    {getStatusIcon}
                   </motion.div>
                   <span className="text-gray-600 dark:text-gray-300">
                     {status}
                   </span>
                   <motion.span
-                    className={`h-2 w-2 rounded-full ${getStatusColor()}`}
+                    className={`h-2 w-2 rounded-full ${getStatusColor}`}
                     animate={{ opacity: [0.5, 1, 0.5] }}
                     transition={{
                       duration: 2,
@@ -233,10 +215,8 @@ export default function Room() {
             </CardHeader>
 
             <CardContent className="space-y-6">
-              {/* File Upload Area */}
               <FileUpload />
 
-              {/* Send Button */}
               <motion.div
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
@@ -270,8 +250,12 @@ export default function Room() {
                 </Button>
               </motion.div>
 
-              {/* Progress Section */}
-              
+              <ProgressSection
+                isSending={isSending}
+                transferProgress={transferProgress}
+                file={file}
+                receivedFileInfo={receivedFileInfo}
+              />
 
               {/* Connection Status Info */}
               <div className="text-center p-4 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800/50 dark:to-gray-700/50 rounded-xl">
@@ -284,6 +268,59 @@ export default function Room() {
             </CardContent>
           </Card>
         </motion.div>
+
+        {/* Remote users sidebar */}
+        <motion.aside
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.3 }}
+          className="hidden md:flex w-64 flex-col rounded-2xl bg-white/80 dark:bg-gray-900/80 border border-white/20 dark:border-gray-700/40 shadow-xl backdrop-blur-xl p-4"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Users className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+              <span className="font-semibold text-sm text-gray-800 dark:text-gray-100">
+                Connected peers
+              </span>
+            </div>
+            <span className="text-xs text-gray-500 dark:text-gray-400">
+              {Object.keys(remoteUsers || {}).length}
+            </span>
+          </div>
+
+          <div className="flex-1 rounded-xl bg-gray-50/80 dark:bg-gray-800/80 border border-gray-200/60 dark:border-gray-700/60 p-2 overflow-y-auto max-h-[60vh] space-y-2">
+            {Object.keys(remoteUsers || {}).length === 0 ? (
+              <p className="text-xs text-gray-500 dark:text-gray-400 text-center py-6">
+                No remote users connected yet.
+              </p>
+            ) : (
+              Object.entries(remoteUsers).map(([id, name]) => (
+                <div
+                  key={id}
+                  className="flex items-center justify-between rounded-lg bg-white/90 dark:bg-gray-900/90 px-2 py-2 shadow-sm border border-gray-200/70 dark:border-gray-700/70"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="h-6 w-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-[10px] font-semibold text-white">
+                      {String(name || id)
+                        .trim()
+                        .charAt(0)
+                        .toUpperCase() || "?"}
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-xs font-medium text-gray-800 dark:text-gray-100 truncate">
+                        {name || "Unknown"}
+                      </span>
+                      <span className="text-[10px] text-gray-500 dark:text-gray-400 truncate">
+                        {id}
+                      </span>
+                    </div>
+                  </div>
+                  <span className="inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+                </div>
+              ))
+            )}
+          </div>
+        </motion.aside>
       </div>
     </div>
   )

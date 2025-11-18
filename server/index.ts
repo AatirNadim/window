@@ -4,42 +4,43 @@ import { SocketService } from "./utils/socket";
 
 const PORT = Number(process.env.PORT) || 8080;
 
-// // Extend WebSocket type to include custom properties
-
-// In-memory storage (use Redis in production)
-const rooms = new Map<string, Room>();
-const userSockets = new Map<string, ExtendedWebSocket>();
-
-const socketService = new SocketService(rooms, userSockets);
+const socketService = new SocketService();
 
 const wss = new WebSocketServer({ port: PORT });
 
 console.log(`🚀 Signaling server running on port ${PORT}`);
 
+const registerWSEventHandlers = (ws: ExtendedWebSocket) => {
+  try {
+    // @ts-expect-error
+    ws.on("message", (data) => {
+      console.debug("Received message");
+      try {
+        const message = JSON.parse(data.toString());
+        console.info("Parsed message:", message);
+        socketService.handleMessage(ws, message as WebSocketMessage);
+      } catch (error) {
+        console.error("Error parsing message:", error);
+      }
+    });
+
+    // @ts-expect-error
+    ws.on("close", () => {
+      console.log("Client disconnected");
+    });
+
+    // @ts-expect-error
+    ws.on("error", (error) => {
+      console.error("WebSocket error:", error);
+    });
+  } catch (error) {
+    console.error("Error in registering WebSocket event handlers:", error);
+  }
+};
+
 wss.on("connection", (ws: ExtendedWebSocket) => {
   console.debug("New client connected");
-
-  // @ts-expect-error
-  ws.on("message", (data) => {
-    console.debug("Received message");
-    try {
-      const message = JSON.parse(data.toString());
-      console.info("Parsed message:", message);
-      socketService.handleMessage(ws, message as WebSocketMessage);
-    } catch (error) {
-      console.error("Error parsing message:", error);
-    }
-  });
-
-  // @ts-expect-error
-  ws.on("close", () => {
-    console.debug("Client disconnected");
-  });
-
-  // @ts-expect-error
-  ws.on("error", (error) => {
-    console.error("WebSocket error:", error);
-  });
+  registerWSEventHandlers(ws);
 });
 
 const gracefulShutdown = () => {
