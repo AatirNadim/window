@@ -21,9 +21,6 @@ export const useSocket = () => {
 
   const [status, setStatus] = useState("Connecting to room...")
   const [isConnected, setIsConnected] = useState(false)
-  const [connectionStatus, setConnectionStatus] = useState<
-    "connecting" | "connected" | "disconnected"
-  >("connecting")
 
   const {
     userId,
@@ -65,7 +62,7 @@ export const useSocket = () => {
           socket.send(JSON.stringify(msg))
 
           console.debug("WebSocket connection established")
-          setStatus("Joined room, waiting for other users...")
+          setStatus("Waiting for other users...")
         }
 
         socket.onmessage = (event) => {
@@ -76,6 +73,12 @@ export const useSocket = () => {
         socket.onclose = () => {
           setStatus("Disconnected from server")
           setIsConnected(false)
+          toast.error("Disconnected", {
+            description:
+              "Disconnected from signaling server. Returning to home page.",
+          })
+          leaveRoom()
+          resetFileStore()
         }
 
         socket.onerror = () => {
@@ -83,6 +86,8 @@ export const useSocket = () => {
             description: "Failed to connect to signaling server",
           })
           setStatus("Connection failed")
+          leaveRoom()
+          resetFileStore()
         }
       } catch (error) {
         console.error("Error registering WebSocket listeners:", error)
@@ -181,6 +186,115 @@ export const useSocket = () => {
     }
   }
 
+  const registerPCEventHandlers = (
+    pc: RTCPeerConnection,
+    remoteUserId: string,
+    remoteUserName: string,
+  ) => {
+    pc.onicecandidate = (event) => {
+      if (event.candidate && socketRef.current) {
+        console.debug("Sending ICE candidate:", "to remote user:")
+        sendWsMessage({
+          type: "ice-candidate",
+          roomId,
+          fromUserId: userId,
+          toUserId: remoteUserId,
+          candidate: event.candidate,
+        })
+      }
+    }
+
+    pc.onconnectionstatechange = () => {
+      switch (pc.connectionState) {
+        case "connected":
+          if (remoteUsers[remoteUserId]) return
+          console.debug(
+            `Connection established with remote user ${remoteUserId}`,
+          )
+          addRemoteUser(remoteUserId, remoteUserName)
+          setIsConnected(true)
+          break
+        case "disconnected":
+        case "failed":
+          console.warn(
+            `Connection with remote user ${remoteUserId} lost. Attempting to reconnect...`,
+          )
+          removeRemoteUser(remoteUserId)
+          toast.error("User Disconnected", {
+            description: `Connection with user ${remoteUserName} lost.`,
+          })
+          // setStatus(`Reconnecting to ${remoteUserId}...`)
+          break
+        case "closed":
+          console.warn(`Connection with remote user ${remoteUserId} closed.`)
+          setIsConnected(false)
+          toast.info("Connection Closed", {
+            description: `Connection with user ${remoteUserName} has been closed.`,
+          })
+          // setStatus("Connection closed with ")
+
+          clearRemoteUsers()
+          break
+        default:
+          console.debug(
+            `Unhandled behaviour: Connection state with remote user ${remoteUserId}: ${pc.connectionState}`,
+          )
+      }
+    }
+
+    pc.oniceconnectionstatechange = () => {
+      console.debug(
+        `ICE connection state with ${remoteUserId}: ${pc.iceConnectionState}`,
+      )
+
+      switch (pc.iceConnectionState) {
+        case "disconnected":
+          toast.warning("ICE Disconnected", {
+            description: `ICE connection with user ${remoteUserName} disconnected.`,
+          })
+          break
+        case "failed":
+          console.error("ICE connection failed, attempting restart")
+          pc.restartIce()
+          break
+      }
+    }
+
+    pc.onicegatheringstatechange = () => {
+      console.debug(
+        `ICE gathering state with ${remoteUserId}: ${pc.iceGatheringState}`,
+      )
+    }
+
+    pc.ondatachannel = (event) => {
+      const channel = event.channel
+      dataChannelMap.current[remoteUserId] = channel
+      console.debug(
+        `Data channel established with remote user ${remoteUserId}:`,
+        channel,
+      )
+
+      registerDataChannelListeners(channel)
+      setStatus("Connected to peer(s)...")
+    }
+
+    pc.onconnectionstatechange = () => {
+      console.debug(
+        `Connection state with remote user ${remoteUserId} changed: ${pc.connectionState}`,
+      )
+
+      if (
+        pc.connectionState === "disconnected" ||
+        pc.connectionState === "failed"
+      ) {
+        console.warn(
+          `Connection with remote user ${remoteUserId} lost. Attempting to reconnect...`,
+        )
+        // setStatus(`Reconnecting to ${remoteUserId}...`)
+      }
+    }
+  }
+
   const createPeerConnection = (
     remoteUserId: string,
     remoteUserName: string,
@@ -211,116 +325,7 @@ export const useSocket = () => {
 
       // registering peer connection event handlers
 
-      pc.onicecandidate = (event) => {
-        if (event.candidate && socketRef.current) {
-          console.debug("Sending ICE candidate:", "to remote user:")
-          sendWsMessage({
-            type: "ice-candidate",
-            roomId,
-            fromUserId: userId,
-            toUserId: remoteUserId,
-            candidate: event.candidate,
-          })
-        }
-      }
-
-      pc.onconnectionstatechange = () => {
-        switch (pc.connectionState) {
-          case "connected":
-            if (remoteUsers[remoteUserId]) return
-            console.debug(
-              `Connection established with remote user ${remoteUserId}`,
-            )
-            addRemoteUser(remoteUserId, remoteUserName)
-            setIsConnected(true)
-            setStatus("Connected to remote user")
-            break
-          case "disconnected":
-          case "failed":
-            console.warn(
-              `Connection with remote user ${remoteUserId} lost. Attempting to reconnect...`,
-            )
-            setConnectionStatus("connecting")
-            removeRemoteUser(remoteUserId)
-            toast.error("User Disconnected", {
-              description: `Connection with user ${remoteUserName} lost.`,
-            })
-            // setStatus(`Reconnecting to ${remoteUserId}...`)
-            break
-          case "closed":
-            console.warn(`Connection with remote user ${remoteUserId} closed.`)
-            setIsConnected(false)
-            toast.info("Connection Closed", {
-              description: `Connection with user ${remoteUserName} has been closed.`,
-            })
-            // setStatus("Connection closed with ")
-
-            clearRemoteUsers()
-            break
-          default:
-            console.debug(
-              `Unhandled behaviour: Connection state with remote user ${remoteUserId}: ${pc.connectionState}`,
-            )
-        }
-      }
-
-      pc.oniceconnectionstatechange = () => {
-        console.debug(
-          `ICE connection state with ${remoteUserId}: ${pc.iceConnectionState}`,
-        )
-
-        switch (pc.iceConnectionState) {
-          case "disconnected":
-            // setStatus("Reconnecting...")
-            toast.warning("ICE Disconnected", {
-              description: `ICE connection with user ${remoteUserName} disconnected.`,
-            })
-            setConnectionStatus("disconnected")
-            break
-          case "failed":
-            console.error("ICE connection failed, attempting restart")
-            pc.restartIce()
-            break
-        }
-      }
-
-      pc.onicegatheringstatechange = () => {
-        console.debug(
-          `ICE gathering state with ${remoteUserId}: ${pc.iceGatheringState}`,
-        )
-      }
-
-      pc.ondatachannel = (event) => {
-        const channel = event.channel
-        dataChannelMap.current[remoteUserId] = channel
-        console.debug(
-          `Data channel established with remote user ${remoteUserId}:`,
-          channel,
-        )
-
-        registerDataChannelListeners(channel)
-      }
-
-      pc.onconnectionstatechange = () => {
-        console.debug(
-          `Connection state with remote user ${remoteUserId} changed: ${pc.connectionState}`,
-        )
-
-        if (
-          pc.connectionState === "disconnected" ||
-          pc.connectionState === "failed"
-        ) {
-          console.warn(
-            `Connection with remote user ${remoteUserId} lost. Attempting to reconnect...`,
-          )
-          setConnectionStatus("connecting")
-          // setStatus(`Reconnecting to ${remoteUserId}...`)
-        }
-
-        setConnectionStatus(
-          pc.connectionState as "connecting" | "connected" | "disconnected",
-        )
-      }
+      registerPCEventHandlers(pc, remoteUserId, remoteUserName)
 
       peerConnections.current[remoteUserId] = pc
 
@@ -354,25 +359,6 @@ export const useSocket = () => {
       }
 
       const pc = peerConnections.current[remoteUserId]
-
-      // setting up data channel for file transfer
-
-      console.debug(
-        "Creating data channel for file transfer with remote user:",
-        remoteUserId,
-      )
-
-      const dataChannel = pc.createDataChannel("fileTransfer", {
-        ordered: true,
-      })
-      dataChannelMap.current[remoteUserId] = dataChannel
-
-      console.debug(
-        "Data channel created at the time of creating the offer:",
-        dataChannelMap.current[remoteUserId],
-      )
-
-      registerDataChannelListeners(dataChannel)
 
       console.debug("Creating offer for remote user:", remoteUserId)
 
@@ -441,7 +427,6 @@ export const useSocket = () => {
       toast.error("Offer Handling Failed", {
         description: "Failed to handle WebRTC offer.",
       })
-      setStatus("Offer handling failed")
     }
   }
 
@@ -460,13 +445,32 @@ export const useSocket = () => {
       await pc.setRemoteDescription(new RTCSessionDescription(msg.answer))
 
       console.debug("Remote description set with answer:", msg.answer)
+
+      // Now that negotiation is complete, create the data channel for file transfer
+      console.debug(
+        "Creating data channel for file transfer with remote user after answer:",
+        msg.fromUserId,
+      )
+
+      const dataChannel = pc.createDataChannel("fileTransfer", {
+        ordered: true,
+      })
+
+      dataChannelMap.current[msg.fromUserId] = dataChannel
+
+      console.debug(
+        "Data channel created after answer:",
+        dataChannelMap.current[msg.fromUserId],
+      )
+
+      registerDataChannelListeners(dataChannel)
+
       setIsConnected(true)
     } catch (error) {
       console.error("Error handling answer:", error)
       toast.error("Answer Handling Failed", {
         description: "Failed to handle WebRTC answer.",
       })
-      // setStatus("Answer handling failed")
     }
   }
 
@@ -491,7 +495,6 @@ export const useSocket = () => {
       toast.error("ICE Candidate Handling Failed", {
         description: "Failed to handle WebRTC ICE candidate.",
       })
-      // setStatus("ICE candidate handling failed")
     }
   }
 
@@ -636,7 +639,6 @@ export const useSocket = () => {
     dataChannelMap,
     status,
     isConnected,
-    connectionStatus,
     createWSConnection,
     sendWsMessage,
     createPeerConnection,

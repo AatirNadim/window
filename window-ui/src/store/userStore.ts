@@ -104,6 +104,8 @@ export const useUserStore = create<UserState & UserAction>()(
         set({
           userId: null,
           userName: null,
+          roomId: null,
+          remoteUsers: {},
         })
       },
 

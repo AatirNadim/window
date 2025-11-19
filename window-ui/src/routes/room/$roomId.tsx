@@ -58,9 +58,9 @@ export default function Room() {
   //   console.debug("Transfer progress updated:", transferProgress)
   // }, [transferProgress])
 
-  // useEffect(() => {
-  //   console.log("sending state changed:", isSending)
-  // }, [isSending])
+  useEffect(() => {
+    console.debug("Remote users updated:", remoteUsers)
+  }, [remoteUsers])
 
   useEffect(() => {
     if (!userId || !userName) {
