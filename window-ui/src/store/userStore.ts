@@ -117,6 +117,7 @@ export const useUserStore = create<UserState & UserAction>()(
       },
 
       addRemoteUser: (userId: string, userName: string) => {
+        console.debug("Adding remote user to the room:", userId, userName)
         set((state) => ({
           remoteUsers: {
             ...state.remoteUsers,

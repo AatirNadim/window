@@ -51,10 +51,6 @@ export default function Home() {
     initializeUser()
 
     navigate({ to: `/room/${roomId}` })
-
-    toast.success("Joining room...", {
-      description: `Connecting to room: ${roomId}`,
-    })
   }
 
   return (
@@ -63,7 +59,7 @@ export default function Home() {
       <GradientBackground />
 
       {/* Animated background elements */}
-      <BackgroundElementsAnimated />      
+      <BackgroundElementsAnimated />
 
       {/* Theme toggle */}
       <div className="absolute top-6 right-6 z-10">
@@ -74,7 +70,7 @@ export default function Home() {
       <div className="relative z-5 min-h-screen flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-7xl mx-auto">
           {/* Mobile/Tablet Layout (Vertical) */}
-          <MobileLayout 
+          <MobileLayout
             roomId={roomId}
             setRoomId={setRoomId}
             handleCreateRoom={handleCreateRoom}
