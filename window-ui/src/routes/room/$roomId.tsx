@@ -37,11 +37,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
-import {
-  Sheet,
-  SheetContent,
-  SheetTrigger,
-} from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
 
 export const Route = createFileRoute("/room/$roomId")({
@@ -54,7 +50,8 @@ export default function Room() {
   // Zustand store
   const { userId, userName, roomId, remoteUsers } = useUserStore()
 
-  const { file, receivedFileInfo, transferProgress, isSending } = useFileStore()
+  const { fileToBeSent, receivedFileInfo, transferProgress, isSending } =
+    useFileStore()
 
   const {
     dataChannelMap,
@@ -246,7 +243,7 @@ export default function Room() {
               </CardHeader>
 
               <CardContent className="space-y-6">
-                <FileUpload />
+                <FileUpload isConnected={isConnected} />
 
                 <motion.div
                   whileHover={{ scale: 1.02 }}
@@ -254,7 +251,7 @@ export default function Room() {
                 >
                   <Button
                     onClick={sendFile}
-                    disabled={!file || isSending || !isConnected}
+                    disabled={!fileToBeSent || isSending || !isConnected}
                     className="w-full h-14 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200 text-lg"
                   >
                     {isSending ? (
@@ -284,7 +281,7 @@ export default function Room() {
                 <ProgressSection
                   isSending={isSending}
                   transferProgress={transferProgress}
-                  file={file}
+                  file={fileToBeSent}
                   receivedFileInfo={receivedFileInfo}
                 />
 

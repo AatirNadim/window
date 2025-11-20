@@ -1,7 +1,7 @@
 import { create } from "zustand"
 
 interface FileState {
-  file: File | null
+  fileToBeSent: File | null
   receivedFile: {
     name: string
     url: string | null
@@ -16,10 +16,12 @@ interface FileState {
 
   transferProgress: number
   isSending: boolean
+}
 
-  setFile: (file: File | null) => void
+interface FileActions {
+  setFileToBeSent: (file: File | null) => void
   setReceivedFile: (file: { name: string; url: string | null }) => void
-  clearFile: () => void
+  clearFileToBeSent: () => void
 
   addReceivedChunk: (chunk: ArrayBuffer) => void
   clearReceivedChunks: () => void
@@ -39,8 +41,8 @@ interface FileState {
 
 export type { FileState }
 
-export const useFileStore = create<FileState>()((set) => ({
-  file: null,
+export const useFileStore = create<FileState & FileActions>()((set) => ({
+  fileToBeSent: null,
   receivedFile: {
     name: "",
     url: null,
@@ -49,9 +51,9 @@ export const useFileStore = create<FileState>()((set) => ({
   receivedFileInfo: null,
   transferProgress: 0,
   isSending: false,
-  setFile: (file) => set({ file }),
+  setFileToBeSent: (file) => set({ fileToBeSent: file }),
   setReceivedFile: (file) => set({ receivedFile: file }),
-  clearFile: () => set({ file: null }),
+  clearFileToBeSent: () => set({ fileToBeSent: null }),
   addReceivedChunk: (chunk) =>
     set((state) => ({
       receivedChunks: [...state.receivedChunks, chunk],
@@ -62,7 +64,7 @@ export const useFileStore = create<FileState>()((set) => ({
   setIsSending: (isSending) => set({ isSending }),
   resetFileStore: () =>
     set({
-      file: null,
+      fileToBeSent: null,
       receivedFile: { name: "", url: null },
       receivedChunks: [],
       receivedFileInfo: null,

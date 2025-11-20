@@ -211,6 +211,11 @@ export const useSocket = () => {
       )
       if (event.candidate && socketRef.current) {
         console.debug("Sending ICE candidate:", "to remote user:")
+
+        if (!roomId || !userId) {
+          throw new Error("Room ID or User ID is not set")
+        }
+
         sendWsMessage({
           type: "ice-candidate",
           roomId,
@@ -410,6 +415,7 @@ export const useSocket = () => {
         fromUserId: userId,
         fromUserName: userName,
         toUserId: remoteUserId,
+        // @ts-expect-error sdp is not null here
         offer,
         roomId,
       })
@@ -450,6 +456,10 @@ export const useSocket = () => {
 
       console.log("Remote description set with offer:", offer)
 
+      if (!roomId) {
+        throw new Error("Room ID is not set")
+      }
+
       // Create an answer to send back
       const answer = await pc.createAnswer()
       await pc.setLocalDescription(answer)
@@ -460,6 +470,7 @@ export const useSocket = () => {
         roomId,
         fromUserId: userId,
         toUserId: fromUserId,
+        // @ts-expect-error sdp is not null here
         answer,
       })
     } catch (error) {
@@ -583,12 +594,24 @@ export const useSocket = () => {
     const { receivedChunks, receivedFileInfo, receivedFile } =
       useFileStore.getState()
 
+    console.log("Received chunks: ", receivedChunks)
+    // console.log("Received file info: ", receivedFileInfo)
+    // console.log("Received file: ", receivedFile)
+
     const receivedSize = receivedChunks.reduce(
       (acc, chunk) => acc + chunk.byteLength,
       0,
     )
+
+    console.log("Received size so far:", receivedSize)
+    // console.log(
+    //   "Total received size so far:",
+    //   receivedSize,
+    //   "total required:",
+    //   receivedFileInfo?.size,
+    // )
     if (receivedFileInfo) {
-      console.log("Received file metadata:", receivedFileInfo)
+      console.log("608: Received file metadata:", receivedFileInfo)
     } else {
       console.log(
         "No metadata received yet, waiting for metadata...",
@@ -603,7 +626,7 @@ export const useSocket = () => {
         "received file size:",
         receivedSize,
         "expected size:",
-        receivedFileInfo.size,
+        receivedFileInfo?.size,
       )
 
       // If all chunks received, assemble the file
@@ -619,6 +642,9 @@ export const useSocket = () => {
         })
 
         // Auto-download
+        toast("Downloading file...", {
+          description: `Downloading ${receivedFileInfo.name}`,
+        })
         const a = document.createElement("a")
         a.href = url
         a.download = receivedFileInfo.name
@@ -628,7 +654,7 @@ export const useSocket = () => {
         document.body.removeChild(a)
 
         console.log("received file info:", receivedFileInfo)
-        console.log("received file metadata: ", receivedFile)
+        console.log("651: received file metadata: ", receivedFile)
       }
     }
   }

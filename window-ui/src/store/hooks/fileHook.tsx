@@ -9,12 +9,13 @@ export const useFile = ({
   peerConnections: React.RefObject<Record<string, RTCPeerConnection | null>>
   dataChannelMap: React.RefObject<Record<string, RTCDataChannel | null>>
 }) => {
-  const { setTransferProgress, file, setFile, setIsSending } = useFileStore()
+  const { setTransferProgress, fileToBeSent, setIsSending } = useFileStore()
 
   const sendFileUtil = (content: any) => {
     for (const [remoteUserId, channel] of Object.entries(
       dataChannelMap.current,
     )) {
+      // Check if channel is open
       if (!channel || ["closed", "closing"].includes(channel.readyState)) {
         toast.error(
           `No data channel for user ${peerConnections.current[remoteUserId]}`,
@@ -32,18 +33,28 @@ export const useFile = ({
   }
 
   const sendFile = () => {
-    console.log("Sending file:", file)
+    console.log("Sending file:", fileToBeSent)
     console.log("Data channel state:", dataChannelMap.current)
 
     for (const [remoteUserId, pc] of Object.entries(peerConnections.current)) {
-      if (!pc || !dataChannelMap.current[remoteUserId]) {
+      if (!pc) {
         toast.error(
           `No peer connection or data channel for user ${remoteUserId}`,
         )
+        return
+      }
+      if (
+        !dataChannelMap.current[remoteUserId] ||
+        ["closed", "closing"].includes(
+          dataChannelMap.current[remoteUserId]?.readyState || "",
+        )
+      ) {
+        toast.error(`No data channel for user ${remoteUserId}`)
+        return
       }
     }
 
-    if (!file) {
+    if (!fileToBeSent) {
       toast.error("No file selected to send")
       console.error("No file selected to send")
       return
@@ -54,13 +65,13 @@ export const useFile = ({
 
     // 1. Send metadata first
     const metadata = JSON.stringify({
-      name: file.name,
-      type: file.type,
-      size: file.size,
+      name: fileToBeSent.name,
+      type: fileToBeSent.type,
+      size: fileToBeSent.size,
     })
 
     toast("Sending file...", {
-      description: `Sending ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`,
+      description: `Sending ${fileToBeSent.name} (${(fileToBeSent.size / 1024 / 1024).toFixed(2)} MB)`,
     })
 
     sendFileUtil(metadata)
@@ -73,13 +84,13 @@ export const useFile = ({
       if (e.target?.result) {
         sendFileUtil(e.target.result as ArrayBuffer)
         offset += (e.target.result as ArrayBuffer).byteLength
-        setTransferProgress((offset / file.size) * 100)
+        setTransferProgress((offset / fileToBeSent.size) * 100)
 
-        if (offset < file.size) {
+        if (offset < fileToBeSent.size) {
           readSlice(offset)
         } else {
           toast.success("File Sent", {
-            description: `${file.name} has been sent successfully.`,
+            description: `${fileToBeSent.name} has been sent successfully.`,
           })
           setIsSending(false)
         }
@@ -87,7 +98,7 @@ export const useFile = ({
     }
 
     const readSlice = (o: number) => {
-      const slice = file.slice(o, o + CHUNK_SIZE)
+      const slice = fileToBeSent.slice(o, o + CHUNK_SIZE)
       fileReader.readAsArrayBuffer(slice)
     }
 

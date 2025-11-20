@@ -4,18 +4,22 @@ import { motion, AnimatePresence } from "framer-motion"
 import { FileUp, XCircle } from "lucide-react"
 import { useState } from "react"
 
-const FileUpload = () => {
+type FileUploadProps = {
+  isConnected: boolean
+}
+
+const FileUpload = ({ isConnected }: FileUploadProps) => {
   const [dragOver, setDragOver] = useState(false)
 
-  const { resetFileStore, setFile, file, isSending } = useFileStore()
-  const { isConnected } = useSocket()
+  const { resetFileStore, setFileToBeSent, fileToBeSent, isSending } =
+    useFileStore()
 
   // --- File Sending Logic ---
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     resetFileStore()
 
     if (e.target.files?.[0]) {
-      setFile(e.target.files[0])
+      setFileToBeSent(e.target.files[0])
     }
   }
 
@@ -25,7 +29,7 @@ const FileUpload = () => {
 
     const files = e.dataTransfer.files
     if (files.length > 0) {
-      setFile(files[0])
+      setFileToBeSent(files[0])
     }
   }
 
@@ -63,17 +67,19 @@ const FileUpload = () => {
           <FileUp className="mx-auto h-16 w-16 text-gray-400 dark:text-gray-500 mb-4" />
         </motion.div>
         <span className="block text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-          {file ? file.name : "Drop files here or click to select"}
+          {fileToBeSent
+            ? fileToBeSent.name
+            : "Drop files here or click to select"}
         </span>
         <span className="text-sm text-gray-500 dark:text-gray-400">
-          {file
-            ? `${(file.size / 1024 / 1024).toFixed(2)} MB`
+          {fileToBeSent
+            ? `${(fileToBeSent.size / 1024 / 1024).toFixed(2)} MB`
             : "Any file type, any size"}
         </span>
       </label>
 
       <AnimatePresence>
-        {file && (
+        {fileToBeSent && (
           <motion.button
             initial={{ opacity: 0, scale: 0 }}
             animate={{ opacity: 1, scale: 1 }}
