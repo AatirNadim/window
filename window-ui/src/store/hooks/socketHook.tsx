@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react"
+import { useRef, useState } from "react"
 import { useUserStore } from "../userStore"
 import { serverPath } from "@/lib/constants"
 import type {
@@ -7,7 +7,6 @@ import type {
   JoinRoomMessage,
   LeaveRoomMessage,
   OfferMessage,
-  UserLeftMessage,
   WebSocketMessage,
 } from "@/types"
 
@@ -48,6 +47,11 @@ export const useSocket = () => {
     try {
       socket.onopen = () => {
         setStatus("Joining room...")
+
+        if (!roomId || !userId || !userName) {
+          console.error("Room ID, User ID or User Name is not set")
+          return
+        }
 
         const msg: JoinRoomMessage = {
           type: "join-room",
@@ -147,7 +151,15 @@ export const useSocket = () => {
         break
 
       case "user-left":
-        handleRemoteUserLeft(message)
+        console.debug(
+          `Remote user ${message.userId} has left the room. Peer connection closed.`,
+        )
+
+        toast.info("Remote User Left", {
+          description: `User with ID ${message.userId} has left the room.`,
+        })
+
+        handleRemoteUserLeft(message.userId)
         toast.error("User Left", {
           description: "The other user has left the room.",
         })
@@ -159,7 +171,6 @@ export const useSocket = () => {
         toast.error("Error", {
           description: message.message || "An error occurred",
         })
-        // resetConnection()
         break
     }
   }
@@ -183,6 +194,11 @@ export const useSocket = () => {
   ) => {
     console.log("running pc event handler registration...")
     pc.onicecandidate = (event) => {
+      console.log(
+        "\n\nreceived event of ice candidate:",
+        event.candidate,
+        "\n\n",
+      )
       if (event.candidate && socketRef.current) {
         console.debug("Sending ICE candidate:", "to remote user:")
         sendWsMessage({
@@ -207,6 +223,11 @@ export const useSocket = () => {
           console.debug(
             `Connection established with remote user ${remoteUserId}`,
           )
+          console.log(
+            "adding remote user to store...",
+            remoteUserId,
+            remoteUserName,
+          )
           addRemoteUser(remoteUserId, remoteUserName)
           setIsConnected(true)
           setStatus("Connected to peer(s)...")
@@ -215,35 +236,27 @@ export const useSocket = () => {
           })
           break
         case "disconnected":
+          console.warn(
+            `Connection with remote user ${remoteUserId} disconnected. Reconnecting...`,
+          )
+
+          break
         case "failed":
           console.warn(
             `Connection with remote user ${remoteUserId} lost. Attempting to reconnect...`,
           )
-          removeRemoteUser(remoteUserId)
-          toast.error("User Disconnected", {
+
+          toast.error("Connection lost with User", {
             description: `Connection with user ${remoteUserName} lost.`,
           })
-          // if there is only a single peer connection left and its connectivity is failed,
-          // set isConnected to false
-          if (Object.keys(peerConnections.current).length === 1) {
-            setIsConnected(false)
-          }
+          handleRemoteUserLeft(remoteUserId)
           break
         case "closed":
           console.warn(`Connection with remote user ${remoteUserId} closed.`)
           toast.info("Connection Closed", {
             description: `Connection with user ${remoteUserName} has been closed.`,
           })
-          removeRemoteUser(remoteUserId)
-          // if there is no other peer connections left, set status to waiting
-          if (Object.keys(peerConnections.current).length === 0) {
-            setStatus("Waiting for other users...")
-          }
-          // if there is only a single peer connection left and its connectivity is failed,
-          // set isConnected to false
-          if (Object.keys(peerConnections.current).length === 1) {
-            setIsConnected(false)
-          }
+          handleRemoteUserLeft(remoteUserId)
 
           break
         default:
@@ -272,7 +285,7 @@ export const useSocket = () => {
     }
 
     pc.onicegatheringstatechange = () => {
-      console.debug(
+      console.log(
         `ICE gathering state with ${remoteUserId}: ${pc.iceGatheringState}`,
       )
     }
@@ -328,6 +341,26 @@ export const useSocket = () => {
         "new peer connection created and added to records for user:",
         remoteUserId,
       )
+
+      // create data channel for file transfer, so that it is ready when offer is created
+
+      console.debug(
+        "Creating data channel for file transfer with remote user after answer:",
+        remoteUserId,
+      )
+
+      const dataChannel = pc.createDataChannel("fileTransfer", {
+        ordered: true,
+      })
+
+      dataChannelMap.current[remoteUserId] = dataChannel
+
+      console.debug(
+        "Data channel created after answer:",
+        dataChannelMap.current[remoteUserId],
+      )
+
+      registerDataChannelListeners(dataChannel)
     } catch (error) {
       console.error("Error creating peer connection:", error)
       toast.error("Peer Connection Failed", {
@@ -365,6 +398,7 @@ export const useSocket = () => {
       sendWsMessage({
         type: "offer",
         fromUserId: userId,
+        fromUserName: userName,
         toUserId: remoteUserId,
         offer,
         roomId,
@@ -441,25 +475,6 @@ export const useSocket = () => {
       await pc.setRemoteDescription(new RTCSessionDescription(msg.answer))
 
       console.debug("Remote description set with answer:", msg.answer)
-
-      // Now that negotiation is complete, create the data channel for file transfer
-      console.debug(
-        "Creating data channel for file transfer with remote user after answer:",
-        msg.fromUserId,
-      )
-
-      const dataChannel = pc.createDataChannel("fileTransfer", {
-        ordered: true,
-      })
-
-      dataChannelMap.current[msg.fromUserId] = dataChannel
-
-      console.debug(
-        "Data channel created after answer:",
-        dataChannelMap.current[msg.fromUserId],
-      )
-
-      registerDataChannelListeners(dataChannel)
     } catch (error) {
       console.error("Error handling answer:", error)
       toast.error("Answer Handling Failed", {
@@ -492,9 +507,11 @@ export const useSocket = () => {
     }
   }
 
-  const handleRemoteUserLeft = (msg: UserLeftMessage) => {
-    console.log("recieved an event that remote user left the room:", msg)
-    const remoteUserId = msg.userId
+  const handleRemoteUserLeft = (remoteUserId: string) => {
+    console.log(
+      "recieved an event that remote user left the room:",
+      remoteUserId,
+    )
     try {
       peerConnections.current[remoteUserId]?.close()
       delete peerConnections.current[remoteUserId]
@@ -502,14 +519,13 @@ export const useSocket = () => {
 
       if (Object.keys(peerConnections.current).length === 0) {
         setStatus("Waiting for other users...")
+      } else if (Object.keys(peerConnections.current).length === 1) {
+        setIsConnected(false)
       }
-      console.debug(
-        `Remote user ${remoteUserId} has left the room. Peer connection closed.`,
-      )
 
-      toast.info("Remote User Left", {
-        description: `User with ID ${remoteUserId} has left the room.`,
-      })
+      removeRemoteUser(remoteUserId)
+      // if there is only a single peer connection left and its connectivity is failed,
+      // set isConnected to false
     } catch (error) {
       console.error("Error handling remote user left:", error)
       toast.error("Error handling Remote User Left", {
@@ -644,7 +660,6 @@ export const useSocket = () => {
     handleOffer,
     handleAnswer,
     handleIceCandidate,
-    handleRemoteUserLeft,
     cleanUp,
   }
 }

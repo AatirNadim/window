@@ -81,6 +81,10 @@ export class SocketService {
           this.handleAnswer(message);
           break;
         case "ice-candidate":
+          console.log(
+            "\n\nreceived ice-candidate message from the user id:",
+            message.fromUserId, "\n\n"
+          )
           this.handleIceCandidate(message);
           break;
         default:

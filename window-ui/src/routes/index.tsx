@@ -55,37 +55,38 @@ export default function Home() {
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* Background with gradient */}
-      <GradientBackground />
+      
+        {/* Background with gradient */}
+        <GradientBackground />
 
-      {/* Animated background elements */}
-      <BackgroundElementsAnimated />
+        {/* Animated background elements */}
+        <BackgroundElementsAnimated />
 
-      {/* Theme toggle */}
-      <div className="absolute top-6 right-6 z-10">
-        <ThemeToggle />
-      </div>
-
-      {/* Main content */}
-      <div className="relative z-5 min-h-screen flex items-center justify-center px-4 py-12">
-        <div className="w-full max-w-7xl mx-auto">
-          {/* Mobile/Tablet Layout (Vertical) */}
-          <MobileLayout
-            roomId={roomId}
-            setRoomId={setRoomId}
-            handleCreateRoom={handleCreateRoom}
-            handleJoinRoom={handleJoinRoom}
-          />
-
-          {/* Desktop Layout (Horizontal) */}
-          <DesktopLayout
-            roomId={roomId}
-            setRoomId={setRoomId}
-            handleCreateRoom={handleCreateRoom}
-            handleJoinRoom={handleJoinRoom}
-          />
+        {/* Theme toggle */}
+        <div className="absolute top-6 right-6 z-10">
+          <ThemeToggle />
         </div>
-      </div>
+
+        {/* Main content */}
+        <div className="relative z-5 min-h-screen flex items-center justify-center px-4 py-12">
+          <div className="w-full max-w-7xl mx-auto">
+            {/* Mobile/Tablet Layout (Vertical) */}
+            <MobileLayout
+              roomId={roomId}
+              setRoomId={setRoomId}
+              handleCreateRoom={handleCreateRoom}
+              handleJoinRoom={handleJoinRoom}
+            />
+
+            {/* Desktop Layout (Horizontal) */}
+            <DesktopLayout
+              roomId={roomId}
+              setRoomId={setRoomId}
+              handleCreateRoom={handleCreateRoom}
+              handleJoinRoom={handleJoinRoom}
+            />
+          </div>
+        </div>
     </div>
   )
 }

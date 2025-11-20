@@ -15,10 +15,15 @@ export const useFile = ({
     for (const [remoteUserId, channel] of Object.entries(
       dataChannelMap.current,
     )) {
-      if (!channel) {
+      if (!channel || ["closed", "closing"].includes(channel.readyState)) {
         toast.error(
           `No data channel for user ${peerConnections.current[remoteUserId]}`,
         )
+        continue
+      }
+
+      if (channel.readyState === "connecting") {
+        toast.error(`Data channel is still connecting for user ${remoteUserId}`)
         continue
       }
 
