@@ -33,6 +33,7 @@ export type WebSocketMessage =
   | UserJoinedMessage
   | UserLeftMessage
   | ErrorMessage
+  | RoomFullMessage
 
 export interface JoinRoomMessage {
   type: "join-room"
@@ -88,4 +89,9 @@ export interface UserLeftMessage {
 export interface ErrorMessage {
   type: "error"
   message: string
+}
+
+export interface RoomFullMessage {
+  type: "room-full"
+  roomId: string
 }

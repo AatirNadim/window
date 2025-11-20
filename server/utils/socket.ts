@@ -12,13 +12,15 @@ import {
   UserJoinedMessage,
   UserLeftMessage,
   ErrorMessage,
+  RoomFullMessage,
   ExtendedWebSocket,
 } from "./types";
+import { MAX_USERS_PER_ROOM } from "./constants";
 
 export class SocketService {
   private rooms: Map<string, Room>;
   private userSockets: Map<string, ExtendedWebSocket>;
-  
+
   constructor() {
     this.rooms = new Map<string, Room>();
     this.userSockets = new Map<string, ExtendedWebSocket>();
@@ -83,8 +85,9 @@ export class SocketService {
         case "ice-candidate":
           console.log(
             "\n\nreceived ice-candidate message from the user id:",
-            message.fromUserId, "\n\n"
-          )
+            message.fromUserId,
+            "\n\n"
+          );
           this.handleIceCandidate(message);
           break;
         default:
@@ -125,6 +128,16 @@ export class SocketService {
         "creating a new room"
       );
       room = { id: roomId, users: [] };
+    }
+
+    if (room.users.length >= MAX_USERS_PER_ROOM) {
+      console.log(`Room ${roomId} is full. Rejecting user ${userId}`);
+      const roomFullMessage: RoomFullMessage = {
+        type: "room-full",
+        roomId,
+      };
+      ws.send(JSON.stringify(roomFullMessage));
+      return;
     }
 
     if (!room.users.find((u) => u.id === userId)) {

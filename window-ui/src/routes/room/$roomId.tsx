@@ -40,8 +40,6 @@ import {
 import {
   Sheet,
   SheetContent,
-  SheetHeader,
-  SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
@@ -65,9 +63,16 @@ export default function Room() {
     createWSConnection,
     peerConnections,
     cleanUp,
+    isRoomFull,
   } = useSocket()
 
   const { sendFile } = useFile({ peerConnections, dataChannelMap })
+
+  useEffect(() => {
+    if (isRoomFull) {
+      navigate({ to: "/" })
+    }
+  }, [isRoomFull, navigate])
 
   useEffect(() => {
     console.debug("Remote users updated:", remoteUsers)

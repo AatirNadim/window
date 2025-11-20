@@ -20,6 +20,7 @@ export const useSocket = () => {
 
   const [status, setStatus] = useState("Connecting to room...")
   const [isConnected, setIsConnected] = useState(false)
+  const [isRoomFull, setIsRoomFull] = useState(false)
 
   const {
     userId,
@@ -170,6 +171,15 @@ export const useSocket = () => {
         setIsConnected(false)
         toast.error("Error", {
           description: message.message || "An error occurred",
+        })
+        break
+
+      case "room-full":
+        setIsRoomFull(true)
+        toast.error("Room is Full", {
+          description: "This room has reached its maximum capacity of 6 users.",
+          duration: 5000,
+          closeButton: true,
         })
         break
     }
@@ -652,6 +662,7 @@ export const useSocket = () => {
     dataChannelMap,
     status,
     isConnected,
+    isRoomFull,
     createWSConnection,
     sendWsMessage,
     createPeerConnection,
