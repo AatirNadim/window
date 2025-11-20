@@ -268,7 +268,6 @@ function SidebarTrigger({
       size="icon"
       className={cn("size-7", className)}
       onClick={(event) => {
-        console.log("SidebarTrigger clicked")
         onClick?.(event)
         toggleSidebar()
       }}

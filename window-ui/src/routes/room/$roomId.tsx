@@ -124,7 +124,7 @@ export default function Room() {
 
   return (
     <SidebarProvider>
-      <Sidebar side="left">
+      <Sidebar side="left" className="hidden md:flex">
         {/* <SidebarHeader>Remote Users</SidebarHeader> */}
         <SidebarContent>
           <RemoteUsersPanel remoteUsers={remoteUsers} />
@@ -140,10 +140,7 @@ export default function Room() {
         <div className="absolute top-6 right-6 z-10">
           <ThemeToggle />
         </div>
-
-        <section className="flex items-start p-2 z-20">
-          <SidebarTrigger />
-        </section>
+        <SidebarTrigger className="hidden md:flex z-20 " />
 
         {/* Main content */}
         <div
@@ -308,70 +305,27 @@ export default function Room() {
                   className="flex items-center gap-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-white/30 dark:border-gray-600/30 text-gray-700 dark:text-gray-200"
                 >
                   <Users className="w-4 h-4" />
-                  <span className="text-xs">Connected peers</span>
+                  <span className="text-xs">Connected peers from sheet</span>
                   <span className="text-xs text-gray-500 dark:text-gray-400">
                     {remoteUserCount}
                   </span>
                 </Button>
               </SheetTrigger>
               <SheetContent
-                side="right"
-                className="w-72 max-w-full p-4 flex flex-col gap-4"
+                side="left"
+
+                // className="w-72 max-w-full p-4 flex flex-col gap-4"
               >
-                <SheetHeader>
-                  <SheetTitle>Connected peers</SheetTitle>
-                </SheetHeader>
-                <div className="flex-1 min-h-0">
-                  <RemoteUsersPanel remoteUsers={remoteUsers} />
-                </div>
+                {/* <SheetHeader>
+                  <SheetTitle>Connected peers from sheet</SheetTitle>
+                </SheetHeader> */}
+                {/* <div className="flex-1 min-h-0"> */}
+                <RemoteUsersPanel remoteUsers={remoteUsers} />
+                {/* </div> */}
               </SheetContent>
             </Sheet>
           </div>
         </div>
-
-        {/* Desktop sidebar */}
-        {/* <Sidebar
-        className={cn(
-          "hidden md:flex fixed top-4 right-4 h-[calc(100vh-2rem)] p-4 transition-all duration-300 overflow-hidden",
-          collapsedWidth,
-        )}
-        >
-        <SidebarContent className="flex-1 min-h-0">
-          <SidebarGroup className="flex-1 min-h-0">
-            <SidebarGroupLabel>Room Controls</SidebarGroupLabel>
-            <SidebarGroupContent className="flex-1 min-h-0">
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    type="button"
-                    onClick={() => setIsSidebarCollapsed((prev) => !prev)}
-                    className={cn(
-                      "justify-between",
-                      isSidebarCollapsed && "px-2 py-2",
-                    )}
-                  >
-                    <span className="inline-flex items-center gap-2">
-                      <Users className="w-4 h-4" />
-                      {!isSidebarCollapsed && <span>Remote Users</span>}
-                    </span>
-                    {!isSidebarCollapsed && (
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {remoteUserCount}
-                      </span>
-                    )}
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-
-              {!isSidebarCollapsed && (
-                <div className="flex-1 min-h-0 overflow-hidden">
-                <RemoteUsersPanel remoteUsers={remoteUsers} />
-                </div>
-              )}
-            </SidebarGroupContent>
-          </SidebarGroup>
-        </SidebarContent>
-        </Sidebar> */}
       </div>
     </SidebarProvider>
   )
