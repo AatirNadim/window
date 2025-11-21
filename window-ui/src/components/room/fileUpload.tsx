@@ -1,100 +1,175 @@
 import { useFileStore } from "@/store/fileStore"
 import { useSocket } from "@/store/hooks/socketHook"
 import { motion, AnimatePresence } from "framer-motion"
-import { FileUp, XCircle } from "lucide-react"
-import { useState } from "react"
+import { FileUp, XCircle, File as FileIcon, Trash2 } from "lucide-react"
+import { useEffect, useState } from "react"
+import { toast } from "sonner"
 
 type FileUploadProps = {
   isConnected: boolean
 }
 
+const MAX_FILE_SIZE_MB = 6
+const MAX_FILES = 5
+
 const FileUpload = ({ isConnected }: FileUploadProps) => {
   const [dragOver, setDragOver] = useState(false)
 
-  const { resetFileStore, setFileToBeSent, fileToBeSent, isSending } =
+  const { addFiles, removeFile, clearFilesToBeSent, filesToBeSent, isSending } =
     useFileStore()
+
+  const validateAndAddFiles = (files: FileList | File[]) => {
+    const validFiles: File[] = []
+    const currentCount = filesToBeSent.length
+
+    if (currentCount >= MAX_FILES) {
+      toast.error(`Maximum ${MAX_FILES} files allowed.`)
+      return
+    }
+    if (currentCount + files.length > MAX_FILES) {
+      toast.error(`You can only add ${MAX_FILES - currentCount} more file(s).`)
+      return
+    }
+
+    Array.from(files).forEach((file) => {
+      if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+        toast.error(
+          `File ${file.name} exceeds ${MAX_FILE_SIZE_MB}MB limit and was skipped.`,
+        )
+      } 
+      // else if (validFiles.length + currentCount < MAX_FILES) {
+        validFiles.push(file)
+      // } 
+      // else {
+      //   toast.error(
+      //     `Maximum ${MAX_FILES} files allowed. Some files were skipped.`,
+      //   )
+      // }
+    })
+
+    if (validFiles.length > 0) {
+      addFiles(validFiles)
+    }
+  }
 
   // --- File Sending Logic ---
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    resetFileStore()
-
-    if (e.target.files?.[0]) {
-      setFileToBeSent(e.target.files[0])
+    if (e.target.files) {
+      validateAndAddFiles(e.target.files)
     }
+    // Reset input value to allow selecting the same file again if needed
+    e.target.value = ""
   }
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
     setDragOver(false)
 
-    const files = e.dataTransfer.files
-    if (files.length > 0) {
-      setFileToBeSent(files[0])
+    if (e.dataTransfer.files.length > 0) {
+      validateAndAddFiles(e.dataTransfer.files)
     }
   }
 
+  useEffect(() => {
+    console.log("current files to be sent:", filesToBeSent)
+  }, [filesToBeSent])
+
   return (
-    <motion.div
-      className={`relative p-8 border-2 border-dashed rounded-xl text-center transition-all duration-300 ${
-        dragOver
-          ? "border-blue-500 bg-blue-50/50 dark:bg-blue-900/20"
-          : "border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500"
-      } ${!isConnected ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
-      onDrop={handleDrop}
-      onDragOver={(e) => {
-        e.preventDefault()
-        setDragOver(true)
-      }}
-      onDragLeave={() => setDragOver(false)}
-      whileHover={isConnected ? { scale: 1.02 } : {}}
-      whileTap={isConnected ? { scale: 0.98 } : {}}
-    >
-      <input
-        type="file"
-        id="file-input"
-        className="hidden"
-        onChange={handleFileChange}
-        disabled={isSending || !isConnected}
-      />
-      <label
-        htmlFor="file-input"
-        className={`cursor-pointer ${isSending || !isConnected ? "cursor-not-allowed" : ""}`}
+    <div className="space-y-4">
+      <motion.div
+        className={`relative p-8 border-2 border-dashed rounded-xl text-center transition-all duration-300 ${
+          dragOver
+            ? "border-blue-500 bg-blue-50/50 dark:bg-blue-900/20"
+            : "border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500"
+        } ${!isConnected ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+        onDrop={handleDrop}
+        onDragOver={(e) => {
+          e.preventDefault()
+          setDragOver(true)
+        }}
+        onDragLeave={() => setDragOver(false)}
+        whileHover={isConnected ? { scale: 1.02 } : {}}
+        whileTap={isConnected ? { scale: 0.98 } : {}}
       >
-        <motion.div
-          animate={dragOver ? { scale: 1.1 } : { scale: 1 }}
-          transition={{ duration: 0.2 }}
+        <input
+          type="file"
+          id="file-input"
+          className="hidden"
+          onChange={handleFileChange}
+          disabled={isSending || !isConnected}
+          multiple
+        />
+        <label
+          htmlFor="file-input"
+          className={`cursor-pointer ${isSending || !isConnected ? "cursor-not-allowed" : ""}`}
         >
-          <FileUp className="mx-auto h-16 w-16 text-gray-400 dark:text-gray-500 mb-4" />
-        </motion.div>
-        <span className="block text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-          {fileToBeSent
-            ? fileToBeSent.name
-            : "Drop files here or click to select"}
-        </span>
-        <span className="text-sm text-gray-500 dark:text-gray-400">
-          {fileToBeSent
-            ? `${(fileToBeSent.size / 1024 / 1024).toFixed(2)} MB`
-            : "Any file type, any size"}
-        </span>
-      </label>
+          <motion.div
+            animate={dragOver ? { scale: 1.1 } : { scale: 1 }}
+            transition={{ duration: 0.2 }}
+          >
+            <FileUp className="mx-auto h-16 w-16 text-gray-400 dark:text-gray-500 mb-4" />
+          </motion.div>
+          <span className="block text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+            Drop files here or click to select
+          </span>
+          <span className="text-sm text-gray-500 dark:text-gray-400">
+            Max {MAX_FILES} files, {MAX_FILE_SIZE_MB}MB each
+          </span>
+        </label>
+      </motion.div>
 
       <AnimatePresence>
-        {fileToBeSent && (
-          <motion.button
-            initial={{ opacity: 0, scale: 0 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0 }}
-            className="absolute top-3 right-3 p-1 rounded-full bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
-            onClick={(e) => {
-              e.preventDefault()
-              resetFileStore()
-            }}
+        {filesToBeSent.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="space-y-2"
           >
-            <XCircle className="h-5 w-5 text-red-500" />
-          </motion.button>
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Selected Files ({filesToBeSent.length}/{MAX_FILES})
+              </span>
+              <button
+                onClick={clearFilesToBeSent}
+                className="text-xs text-red-500 hover:text-red-600 flex items-center gap-1"
+                disabled={isSending}
+              >
+                <Trash2 className="w-3 h-3" /> Clear All
+              </button>
+            </div>
+            <div className="grid gap-2 max-h-40 overflow-y-auto pr-2">
+              {filesToBeSent.map((file, index) => (
+                <motion.div
+                  key={`${file.name}-${index}`}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+                >
+                  <div className="flex items-center gap-2 overflow-hidden">
+                    <FileIcon className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                    <span className="text-sm truncate max-w-[200px]">
+                      {file.name}
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => removeFile(file.name)}
+                    disabled={isSending}
+                    className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors"
+                  >
+                    <XCircle className="w-4 h-4 text-gray-500 hover:text-red-500" />
+                  </button>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </div>
   )
 }
 

@@ -1,12 +1,12 @@
 import { create } from "zustand"
 
 interface FileState {
-  fileToBeSent: File | null
+  filesToBeSent: File[]
+  sendingFile: File | null
   receivedFile: {
     name: string
     url: string | null
   }
-  receivedChunks: Array<ArrayBuffer>
 
   receivedFileInfo: {
     name: string
@@ -19,12 +19,12 @@ interface FileState {
 }
 
 interface FileActions {
-  setFileToBeSent: (file: File | null) => void
+  addFiles: (files: File[]) => void
+  removeFile: (fileName: string) => void
+  clearFilesToBeSent: () => void
+  setSendingFile: (file: File | null) => void
   setReceivedFile: (file: { name: string; url: string | null }) => void
-  clearFileToBeSent: () => void
 
-  addReceivedChunk: (chunk: ArrayBuffer) => void
-  clearReceivedChunks: () => void
   setReceivedFileInfo: (
     info: {
       name: string
@@ -42,31 +42,51 @@ interface FileActions {
 export type { FileState }
 
 export const useFileStore = create<FileState & FileActions>()((set) => ({
-  fileToBeSent: null,
+  filesToBeSent: [],
+  sendingFile: null,
   receivedFile: {
     name: "",
     url: null,
   },
-  receivedChunks: [],
   receivedFileInfo: null,
   transferProgress: 0,
   isSending: false,
-  setFileToBeSent: (file) => set({ fileToBeSent: file }),
-  setReceivedFile: (file) => set({ receivedFile: file }),
-  clearFileToBeSent: () => set({ fileToBeSent: null }),
-  addReceivedChunk: (chunk) =>
+  addFiles: (newFiles) =>
+    set((state) => {
+      const currentFiles = state.filesToBeSent
+      const combinedFiles = [...currentFiles, ...newFiles]
+
+      // Filter out duplicates by name
+      const uniqueFiles = combinedFiles.filter(
+        (file, index, self) =>
+          index === self.findIndex((f) => f.name === file.name),
+      )
+
+      // Limit to 10 files
+      if (uniqueFiles.length > 10) {
+        return { filesToBeSent: uniqueFiles.slice(0, 10) }
+      }
+
+      return { filesToBeSent: uniqueFiles }
+    }),
+  removeFile: (fileName) =>
     set((state) => ({
-      receivedChunks: [...state.receivedChunks, chunk],
+      filesToBeSent: state.filesToBeSent.filter(
+        (file) => file.name !== fileName,
+      ),
     })),
-  clearReceivedChunks: () => set({ receivedChunks: [] }),
+  clearFilesToBeSent: () => set({ filesToBeSent: [] }),
+  setSendingFile: (file) => set({ sendingFile: file }),
+  setReceivedFile: (file) => set({ receivedFile: file }),
+
   setReceivedFileInfo: (info) => set({ receivedFileInfo: info }),
   setTransferProgress: (progress) => set({ transferProgress: progress }),
   setIsSending: (isSending) => set({ isSending }),
   resetFileStore: () =>
     set({
-      fileToBeSent: null,
+      filesToBeSent: [],
+      sendingFile: null,
       receivedFile: { name: "", url: null },
-      receivedChunks: [],
       receivedFileInfo: null,
       transferProgress: 0,
       isSending: false,

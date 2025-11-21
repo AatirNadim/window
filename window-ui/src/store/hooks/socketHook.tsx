@@ -36,13 +36,8 @@ export const useSocket = () => {
 
   const { resetFileStore } = useFileStore()
 
-  const {
-    setTransferProgress,
-    setReceivedFileInfo,
-    addReceivedChunk,
-    clearReceivedChunks,
-    setReceivedFile,
-  } = useFileStore()
+  const { setReceivedFile, setReceivedFileInfo, setTransferProgress } =
+    useFileStore()
 
   const registerListenersForSocket = (socket: WebSocket) => {
     try {
@@ -307,7 +302,7 @@ export const useSocket = () => {
 
     pc.ondatachannel = (event) => {
       const channel = event.channel
-      dataChannelMap.current[remoteUserId] = channel
+      // dataChannelMap.current[remoteUserId] = channel
       console.debug(
         `Data channel established with remote user ${remoteUserId}:`,
         channel,
@@ -556,78 +551,63 @@ export const useSocket = () => {
   }
 
   const registerDataChannelListeners = (channel: RTCDataChannel) => {
+    let receivedChunks: ArrayBuffer[] = []
+    let receivedFileInfo: { name: string; type: string; size: number } | null =
+      null
+    let receivedSize = 0
+
     channel.onopen = () => {
-      console.log("Data channel is open:", channel)
+      console.log("Data channel is open:", channel.label)
     }
 
     channel.onclose = () => {
-      console.log("Data channel is closed:", channel)
-      setIsConnected(false)
+      console.log("Data channel is closed:", channel.label)
     }
 
-    channel.onmessage = (event) => {
-      handleReceiveMessage(event.data)
-    }
-  }
+    channel.onmessage = async (event) => {
+      let chunk = event.data
 
-  const handleReceiveMessage = (data: any) => {
-    console.log("received data at the receiver:", data, typeof data)
+      // If data is a string, it's metadata.
+      if (typeof chunk === "string") {
+        try {
+          receivedFileInfo = JSON.parse(chunk)
+          receivedChunks = []
+          receivedSize = 0
 
-    // If data is a string, it's metadata.
-    if (typeof data === "string") {
-      const metadata = JSON.parse(data)
+          setReceivedFileInfo(receivedFileInfo)
+          setTransferProgress(0)
+          toast.success("Incoming File", {
+            description: `Receiving ${receivedFileInfo?.name} (${((receivedFileInfo?.size || 0) / 1024 / 1024).toFixed(2)} MB)`,
+          })
+        } catch (error) {
+          console.error("Error parsing metadata:", error)
+        }
+        return
+      }
 
-      setReceivedFileInfo(metadata)
-      clearReceivedChunks()
-      setTransferProgress(0)
-      toast.success("Incoming File", {
-        description: `Receiving ${metadata.name} (${(metadata.size / 1024 / 1024).toFixed(2)} MB)`,
-      })
-      return
-    }
+      // Otherwise, it's a file chunk (ArrayBuffer)
+      if (chunk instanceof Blob) {
+        chunk = await chunk.arrayBuffer()
+      } else if (chunk instanceof String) {
+        chunk = new TextEncoder().encode(chunk as string).buffer
+      }
 
-    // Otherwise, it's a file chunk (ArrayBuffer)
+      if (chunk instanceof ArrayBuffer === false) {
+        console.error("Received incompatible segment type", chunk)
+        return
+      }
 
-    addReceivedChunk(data as ArrayBuffer)
+      // highly unlikely, but checking if metadata was received
+      if (!receivedFileInfo) {
+        console.error("Received file chunk before metadata")
+        return
+      }
 
-    // getting the latest state snapshot
-    const { receivedChunks, receivedFileInfo, receivedFile } =
-      useFileStore.getState()
+      // push chunk to received chunks
+      receivedChunks.push(chunk)
+      receivedSize += chunk.byteLength
 
-    console.log("Received chunks: ", receivedChunks)
-    // console.log("Received file info: ", receivedFileInfo)
-    // console.log("Received file: ", receivedFile)
-
-    const receivedSize = receivedChunks.reduce(
-      (acc, chunk) => acc + chunk.byteLength,
-      0,
-    )
-
-    console.log("Received size so far:", receivedSize)
-    // console.log(
-    //   "Total received size so far:",
-    //   receivedSize,
-    //   "total required:",
-    //   receivedFileInfo?.size,
-    // )
-    if (receivedFileInfo) {
-      console.log("608: Received file metadata:", receivedFileInfo)
-    } else {
-      console.log(
-        "No metadata received yet, waiting for metadata...",
-        receivedFileInfo,
-      )
-    }
-
-    if (receivedFileInfo) {
       setTransferProgress((receivedSize / receivedFileInfo.size) * 100)
-
-      console.log(
-        "received file size:",
-        receivedSize,
-        "expected size:",
-        receivedFileInfo?.size,
-      )
 
       // If all chunks received, assemble the file
       if (receivedSize === receivedFileInfo.size) {
@@ -642,9 +622,6 @@ export const useSocket = () => {
         })
 
         // Auto-download
-        toast("Downloading file...", {
-          description: `Downloading ${receivedFileInfo.name}`,
-        })
         const a = document.createElement("a")
         a.href = url
         a.download = receivedFileInfo.name
@@ -653,8 +630,10 @@ export const useSocket = () => {
         a.click()
         document.body.removeChild(a)
 
-        console.log("received file info:", receivedFileInfo)
-        console.log("651: received file metadata: ", receivedFile)
+        // Reset local state for next file on this channel (if any, though we expect channel close)
+        receivedChunks = []
+        receivedSize = 0
+        receivedFileInfo = null
       }
     }
   }

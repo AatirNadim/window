@@ -50,8 +50,13 @@ export default function Room() {
   // Zustand store
   const { userId, userName, roomId, remoteUsers } = useUserStore()
 
-  const { fileToBeSent, receivedFileInfo, transferProgress, isSending } =
-    useFileStore()
+  const {
+    filesToBeSent,
+    receivedFileInfo,
+    transferProgress,
+    isSending,
+    sendingFile,
+  } = useFileStore()
 
   const {
     dataChannelMap,
@@ -139,7 +144,7 @@ export default function Room() {
         {/* Animated background elements */}
         <BackgroundElementsAnimated />
 
-        <div className="absolute top-6 right-6 z-10">
+        <div className="absolute top-6 right-6 z-20">
           <ThemeToggle />
         </div>
         <SidebarTrigger className="hidden md:flex z-20 " />
@@ -203,10 +208,12 @@ export default function Room() {
                       onClick={() => {
                         navigate({ to: "/" })
                       }}
-                      className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-white/30 dark:border-gray-600/30 hover:bg-white/90 dark:hover:bg-gray-700/90 text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white transition-all duration-200 shadow-sm hover:shadow-md"
+                      className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-white/30 dark:border-gray-600/30 hover:bg-white/90 dark:hover:bg-gray-700/90 text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white transition-all duration-200 shadow-sm hover:shadow-md font-bold"
                     >
-                      <ArrowLeft className="w-4 h-4 mr-2" />
-                      Leave
+                      <ArrowLeft className="w-4 h-4 mr-2 font-bold" />
+                      <span
+                        className="font-extrabold"
+                      >Leave</span>
                     </Button>
                   </motion.div>
                 </CardTitle>
@@ -251,7 +258,9 @@ export default function Room() {
                 >
                   <Button
                     onClick={sendFile}
-                    disabled={!fileToBeSent || isSending || !isConnected}
+                    disabled={
+                      filesToBeSent.length === 0 || isSending || !isConnected
+                    }
                     className="w-full h-14 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200 text-lg"
                   >
                     {isSending ? (
@@ -272,16 +281,17 @@ export default function Room() {
                     ) : (
                       <>
                         <Send className="w-5 h-5 mr-3" />
-                        Send File
+                        Send Files ({filesToBeSent.length})
                       </>
                     )}
                   </Button>
                 </motion.div>
 
+                {/* TODO: check what file info needs to be displayed when sending multiple files over a no of channels */}
                 <ProgressSection
                   isSending={isSending}
                   transferProgress={transferProgress}
-                  file={fileToBeSent}
+                  file={sendingFile}
                   receivedFileInfo={receivedFileInfo}
                 />
 

@@ -63,7 +63,7 @@ export default function Home() {
         <BackgroundElementsAnimated />
 
         {/* Theme toggle */}
-        <div className="absolute top-6 right-6 z-10">
+        <div className="absolute top-6 right-6 z-20">
           <ThemeToggle />
         </div>
 
