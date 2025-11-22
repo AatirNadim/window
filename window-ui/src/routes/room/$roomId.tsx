@@ -38,17 +38,19 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { cn } from "@/lib/utils"
+import { cn, isValidUUID } from "@/lib/utils"
 
 export const Route = createFileRoute("/room/$roomId")({
   component: Room,
 })
 
 export default function Room() {
+  const { roomId } = Route.useParams()
+
   const navigate = useNavigate()
 
   // Zustand store
-  const { userId, userName, roomId, remoteUsers } = useUserStore()
+  const { userId, userName, remoteUsers, setUserId } = useUserStore()
 
   const {
     filesToBeSent,
@@ -71,22 +73,31 @@ export default function Room() {
   const { sendFile } = useFile({ peerConnections, dataChannelMap })
 
   useEffect(() => {
+    if (!isValidUUID(roomId.trim())) {
+      cleanUp()
+      navigate({ to: "/" })
+      toast.error("Invalid Room ID Format", {
+        description: "Please enter a valid UUID format room ID.",
+      })
+    }
+  }, [roomId, navigate, cleanUp])
+
+  useEffect(() => {
     if (isRoomFull) {
       navigate({ to: "/" })
     }
   }, [isRoomFull, navigate])
 
   useEffect(() => {
-    console.debug("Remote users updated:", remoteUsers)
-  }, [remoteUsers])
+    console.log("User ID changed to:", userId)
+  }, [userId])
 
   useEffect(() => {
-    if (!userId || !userName) {
-      toast.error("User Initialization Failed", {
-        description:
-          "Failed to initialize user details. Please refresh the page.",
-      })
-      return
+    if (!userId) {
+      console.error(
+        "userid is missing, probably from reload, setting new userid",
+      )
+      setUserId()
     }
 
     // Full page unload (refresh, close tab, navigate to another origin, etc.)
@@ -211,9 +222,7 @@ export default function Room() {
                       className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-white/30 dark:border-gray-600/30 hover:bg-white/90 dark:hover:bg-gray-700/90 text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white transition-all duration-200 shadow-sm hover:shadow-md font-bold"
                     >
                       <ArrowLeft className="w-4 h-4 mr-2 font-bold" />
-                      <span
-                        className="font-extrabold"
-                      >Leave</span>
+                      <span className="font-extrabold">Leave</span>
                     </Button>
                   </motion.div>
                 </CardTitle>

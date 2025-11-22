@@ -12,6 +12,7 @@ interface UserState {
 }
 
 interface UserAction {
+  setUserId: () => void
   initializeUser: () => void
   joinRoom: (roomId: string) => void
   leaveRoom: () => void
@@ -74,6 +75,10 @@ export const useUserStore = create<UserState & UserAction>()(
       remoteUsers: {},
       roomId: null,
 
+      setUserId: () => {
+        set({ userId: uuidv4() })
+      },
+
       initializeUser: () => {
         const state = get()
 
@@ -103,7 +108,6 @@ export const useUserStore = create<UserState & UserAction>()(
       leaveRoom: () => {
         set({
           userId: null,
-          userName: null,
           roomId: null,
           remoteUsers: {},
         })
@@ -144,11 +148,10 @@ export const useUserStore = create<UserState & UserAction>()(
     }),
     {
       name: "window-user-storage",
-      storage: createJSONStorage(() => localStorage),
-      // Only persist userName; userId and currentRoomId will be regenerated
+      // storage: createJSONStorage(() => localStorage),
+      // persist the username, userId and roomId only
       partialize: (state) => ({
         userName: state.userName,
-        userId: state.userId,
       }),
     },
   ),

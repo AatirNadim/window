@@ -1,16 +1,17 @@
+import {
+  MAX_FILE_SIZE_MB_MULTIPLE_SEND,
+  MAX_FILE_SIZE_SINGLE_SEND,
+  MAX_FILES_TO_SEND_TOGETHER,
+} from "@/lib/constants"
 import { useFileStore } from "@/store/fileStore"
-import { useSocket } from "@/store/hooks/socketHook"
 import { motion, AnimatePresence } from "framer-motion"
 import { FileUp, XCircle, File as FileIcon, Trash2 } from "lucide-react"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { toast } from "sonner"
 
 type FileUploadProps = {
   isConnected: boolean
 }
-
-const MAX_FILE_SIZE_MB = 6
-const MAX_FILES = 5
 
 const FileUpload = ({ isConnected }: FileUploadProps) => {
   const [dragOver, setDragOver] = useState(false)
@@ -22,30 +23,38 @@ const FileUpload = ({ isConnected }: FileUploadProps) => {
     const validFiles: File[] = []
     const currentCount = filesToBeSent.length
 
-    if (currentCount >= MAX_FILES) {
-      toast.error(`Maximum ${MAX_FILES} files allowed.`)
+    if (currentCount >= MAX_FILES_TO_SEND_TOGETHER) {
+      toast.error(`Maximum ${MAX_FILES_TO_SEND_TOGETHER} files allowed.`)
       return
     }
-    if (currentCount + files.length > MAX_FILES) {
-      toast.error(`You can only add ${MAX_FILES - currentCount} more file(s).`)
+    if (currentCount + files.length > MAX_FILES_TO_SEND_TOGETHER) {
+      toast.error(
+        `You can only add ${MAX_FILES_TO_SEND_TOGETHER - currentCount} more file(s).`,
+      )
       return
     }
 
-    Array.from(files).forEach((file) => {
-      if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+    if (currentCount + files.length === 1) {
+      // there is only one file to be sent overall
+      const file = files[0]
+
+      if (file.size > MAX_FILE_SIZE_SINGLE_SEND * 1024 * 1024) {
         toast.error(
-          `File ${file.name} exceeds ${MAX_FILE_SIZE_MB}MB limit and was skipped.`,
+          `File ${file.name} exceeds ${MAX_FILE_SIZE_SINGLE_SEND}MB limit.`,
         )
-      } 
-      // else if (validFiles.length + currentCount < MAX_FILES) {
+        return
+      }
+      validFiles.push(file)
+    } else {
+      Array.from(files).forEach((file) => {
+        if (file.size > MAX_FILE_SIZE_MB_MULTIPLE_SEND * 1024 * 1024) {
+          toast.error(
+            `File ${file.name} exceeds ${MAX_FILE_SIZE_MB_MULTIPLE_SEND}MB limit and was skipped.`,
+          )
+        }
         validFiles.push(file)
-      // } 
-      // else {
-      //   toast.error(
-      //     `Maximum ${MAX_FILES} files allowed. Some files were skipped.`,
-      //   )
-      // }
-    })
+      })
+    }
 
     if (validFiles.length > 0) {
       addFiles(validFiles)
@@ -69,10 +78,6 @@ const FileUpload = ({ isConnected }: FileUploadProps) => {
       validateAndAddFiles(e.dataTransfer.files)
     }
   }
-
-  useEffect(() => {
-    console.log("current files to be sent:", filesToBeSent)
-  }, [filesToBeSent])
 
   return (
     <div className="space-y-4">
@@ -113,7 +118,8 @@ const FileUpload = ({ isConnected }: FileUploadProps) => {
             Drop files here or click to select
           </span>
           <span className="text-sm text-gray-500 dark:text-gray-400">
-            Max {MAX_FILES} files, {MAX_FILE_SIZE_MB}MB each
+            Max {MAX_FILES_TO_SEND_TOGETHER} files,{" "}
+            {MAX_FILE_SIZE_MB_MULTIPLE_SEND}MB each
           </span>
         </label>
       </motion.div>
@@ -128,7 +134,8 @@ const FileUpload = ({ isConnected }: FileUploadProps) => {
           >
             <div className="flex justify-between items-center mb-2">
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Selected Files ({filesToBeSent.length}/{MAX_FILES})
+                Selected Files ({filesToBeSent.length}/
+                {MAX_FILES_TO_SEND_TOGETHER})
               </span>
               <button
                 onClick={clearFilesToBeSent}

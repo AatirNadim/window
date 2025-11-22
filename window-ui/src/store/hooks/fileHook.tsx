@@ -56,7 +56,13 @@ export const useFile = ({
         return sendFilesToPeer(remoteUserId, pc, filesToBeSent, totalGlobalSize)
       })
 
-      await Promise.all(peerPromises)
+      const results = await Promise.allSettled(peerPromises)
+
+      const rejected = results.filter((res) => res.status === "rejected")
+      if (rejected.length > 0) {
+        console.error("Some peers failed to receive files:", rejected)
+        throw new Error("Failed to send files to some peers")
+      }
 
       toast.success("All files sent successfully")
     } catch (error) {
@@ -98,7 +104,15 @@ export const useFile = ({
       return processQueue(channel, queue, remoteUserId, totalGlobalSize)
     })
 
-    await Promise.all(channelPromises)
+    const result = await Promise.allSettled(channelPromises)
+
+    const rejected = result.filter((res) => res.status === "rejected")
+    if (rejected.length > 0) {
+      console.error(`Some channels failed for peer ${remoteUserId}:`, rejected)
+      throw new Error(
+        `Failed to send files to peer ${remoteUserId}: ${rejected}`,
+      )
+    }
   }
 
   /**
@@ -195,11 +209,10 @@ export const useFile = ({
       }
 
       fileReader.onload = (e) => {
-
         if (!e.target?.result) {
           return reject(new Error("FileReader result is null"))
         }
-        
+
         const chunk = e.target.result as ArrayBuffer
         const chunkSize = chunk.byteLength
 
@@ -212,6 +225,7 @@ export const useFile = ({
 
             // Basic backpressure handling
             if (channel.bufferedAmount > 10 * 1024 * 1024) {
+              // 10MB buffer
               // Wait for buffer to drain
               const onBufferedAmountLow = () => {
                 channel.removeEventListener(

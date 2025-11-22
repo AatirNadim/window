@@ -26,11 +26,9 @@ export const useSocket = () => {
     userId,
     userName,
     roomId,
-    setRoomId,
     remoteUsers,
     addRemoteUser,
     removeRemoteUser,
-    clearRemoteUsers,
     leaveRoom,
   } = useUserStore()
 
@@ -652,8 +650,6 @@ export const useSocket = () => {
         } as LeaveRoomMessage),
       )
       socketRef.current?.close()
-      clearRemoteUsers()
-      setRoomId(null)
       resetFileStore() // Reset file state when leaving room
       leaveRoom()
     } catch (error) {
