@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react"
+import { useEffect, useMemo, useRef } from "react"
 import { toast } from "sonner"
 import { motion } from "framer-motion"
 import {
@@ -40,17 +40,18 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { cn, isValidUUID } from "@/lib/utils"
 
-export const Route = createFileRoute("/room/$roomId")({
+export const Route = createFileRoute("/room/$rId")({
   component: Room,
 })
 
 export default function Room() {
-  const { roomId } = Route.useParams()
+  const { rId } = Route.useParams()
 
   const navigate = useNavigate()
 
   // Zustand store
-  const { userId, userName, remoteUsers, setUserId } = useUserStore()
+  const { userId, roomId, userName, remoteUsers, setUserId, setRoomId } =
+    useUserStore()
 
   const {
     filesToBeSent,
@@ -71,16 +72,18 @@ export default function Room() {
   } = useSocket()
 
   const { sendFile } = useFile({ peerConnections, dataChannelMap })
+  const cleanUpRef = useRef(cleanUp)
 
   useEffect(() => {
-    if (!isValidUUID(roomId.trim())) {
+    if (!isValidUUID(rId.trim())) {
       cleanUp()
       navigate({ to: "/" })
       toast.error("Invalid Room ID Format", {
         description: "Please enter a valid UUID format room ID.",
       })
     }
-  }, [roomId, navigate, cleanUp])
+    setRoomId(rId)
+  }, [rId])
 
   useEffect(() => {
     if (isRoomFull) {
@@ -89,23 +92,26 @@ export default function Room() {
   }, [isRoomFull, navigate])
 
   useEffect(() => {
-    console.log("User ID changed to:", userId)
-  }, [userId])
-
-  useEffect(() => {
+    console.log("room details:", { roomId, userId })
+    if (!roomId) {
+      console.log("roomid is not parsed yet..")
+      return
+    }
     if (!userId) {
       console.error(
         "userid is missing, probably from reload, setting new userid",
       )
       setUserId()
+      return
     }
-
-    // Full page unload (refresh, close tab, navigate to another origin, etc.)
-    window.addEventListener("beforeunload", cleanUp)
 
     console.debug("creating socket connection for room:", roomId)
 
     try {
+      console.log(
+        "Attempting to create WebSocket connection... with userid:",
+        userId,
+      )
       createWSConnection()
     } catch (error) {
       console.error(
@@ -114,13 +120,28 @@ export default function Room() {
       )
       navigate({ to: "/" })
     }
+  }, [roomId, userId])
 
+  // cleanupref will always have latest cleanUp function
+  useEffect(() => {
+    cleanUpRef.current = cleanUp
+  }, [cleanUp])
+
+  useEffect(() => {
+    // Full page unload (refresh, close tab, navigate to another origin, etc.)
+
+    const handleUnload = () => {
+      // ref always points to the latest cleanUp function
+      cleanUpRef.current()
+    }
+
+    window.addEventListener("beforeunload", handleUnload)
     return () => {
       // Leave room and clear userId when navigating away
-      window.removeEventListener("beforeunload", cleanUp)
-      cleanUp()
+      window.removeEventListener("beforeunload", handleUnload)
+      handleUnload()
     }
-  }, [roomId, userId])
+  }, [])
 
   const getStatusIcon = useMemo(() => {
     if (isConnected) return <Wifi className="w-4 h-4 text-green-500" />
@@ -185,7 +206,7 @@ export default function Room() {
                     </div>
                     <span className="flex justify-center items-start gap-3">
                       <span>Room: </span>
-                      <span className="break-all">{roomId}</span>
+                      <span className="break-all">{rId}</span>
                     </span>
                     <motion.div
                       whileHover={{ scale: 1.05 }}
@@ -196,9 +217,7 @@ export default function Room() {
                         variant="ghost"
                         size="sm"
                         onClick={() => {
-                          navigator.clipboard.writeText(
-                            roomId || "roomid missing",
-                          )
+                          navigator.clipboard.writeText(rId || "roomid missing")
                           toast.success("Room ID Copied", {
                             description: "Room ID has been copied to clipboard",
                           })
