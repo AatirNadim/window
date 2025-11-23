@@ -128,18 +128,27 @@ export default function Room() {
   }, [cleanUp])
 
   useEffect(() => {
-    // Full page unload (refresh, close tab, navigate to another origin, etc.)
+    // 1. Handler to prompt the user before reloading/closing
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault()
+      // Setting returnValue triggers the browser's native confirmation dialog
+      e.returnValue = ""
+    }
 
-    const handleUnload = () => {
-      // ref always points to the latest cleanUp function
+    // 2. Handler to run cleanup ONLY when the page is actually unloading
+    const handlePageHide = () => {
       cleanUpRef.current()
     }
 
-    window.addEventListener("beforeunload", handleUnload)
+    window.addEventListener("beforeunload", handleBeforeUnload)
+    window.addEventListener("pagehide", handlePageHide)
+
     return () => {
-      // Leave room and clear userId when navigating away
-      window.removeEventListener("beforeunload", handleUnload)
-      handleUnload()
+      window.removeEventListener("beforeunload", handleBeforeUnload)
+      window.removeEventListener("pagehide", handlePageHide)
+
+      // 3. Run cleanup on component unmount (SPA navigation)
+      cleanUpRef.current()
     }
   }, [])
 

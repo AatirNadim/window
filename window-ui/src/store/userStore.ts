@@ -1,5 +1,5 @@
 import { create } from "zustand"
-import { persist } from "zustand/middleware"
+import { createJSONStorage, persist } from "zustand/middleware"
 import { v4 as uuidv4 } from "uuid"
 
 interface UserState {
@@ -148,8 +148,8 @@ export const useUserStore = create<UserState & UserAction>()(
     }),
     {
       name: "window-user-storage",
-      // storage: createJSONStorage(() => localStorage),
       // persist the username, userId and roomId only
+      storage: createJSONStorage(() => sessionStorage),
       partialize: (state) => ({
         userName: state.userName,
       }),
