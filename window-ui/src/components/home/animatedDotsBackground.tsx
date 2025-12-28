@@ -25,7 +25,8 @@ const AnimatedDotsBackground = () => {
   const MOUSE_RADIUS = 120
   const RETURN_SPEED = 0.008
   const RANDOM_MOVEMENT = 0.15
-  const dotColor = theme === "dark" ? "59, 130, 246" : "37, 99, 235" // blue-500 for dark, blue-600 for light
+  const MAX_VELOCITY = 2
+  const dotColor = theme === "dark" ? "59, 130, 246" : "37, 99, 235"
 
   const initDots = useCallback((width: number, height: number) => {
     const dots: Dot[] = []
@@ -77,13 +78,31 @@ const AnimatedDotsBackground = () => {
         dot.vy += (dot.baseY - dot.y) * RETURN_SPEED
       }
 
+      const speed = Math.sqrt(dot.vx * dot.vx + dot.vy * dot.vy)
+      if (speed > MAX_VELOCITY) {
+        dot.vx = (dot.vx / speed) * MAX_VELOCITY
+        dot.vy = (dot.vy / speed) * MAX_VELOCITY
+      }
+
       dot.x += dot.vx
       dot.y += dot.vy
 
-      if (dot.x < 0) dot.x = width
-      if (dot.x > width) dot.x = 0
-      if (dot.y < 0) dot.y = height
-      if (dot.y > height) dot.y = 0
+      if (dot.x < 0) {
+        dot.x = width
+        dot.baseX = width
+      }
+      if (dot.x > width) {
+        dot.x = 0
+        dot.baseX = 0
+      }
+      if (dot.y < 0) {
+        dot.y = height
+        dot.baseY = height
+      }
+      if (dot.y > height) {
+        dot.y = 0
+        dot.baseY = 0
+      }
 
       ctx.beginPath()
       ctx.arc(dot.x, dot.y, dot.radius, 0, Math.PI * 2)
@@ -133,7 +152,10 @@ const AnimatedDotsBackground = () => {
     if (!canvas) return
 
     resizeCanvas(canvas)
-    window.addEventListener("resize", () => resizeCanvas(canvas))
+
+    const handleResize = () => resizeCanvas(canvas)
+
+    window.addEventListener("resize", handleResize)
     window.addEventListener("mousemove", handleMouseMove)
     window.addEventListener("mouseleave", handleMouseLeave)
 
@@ -143,7 +165,7 @@ const AnimatedDotsBackground = () => {
     animationFrameRef.current = requestAnimationFrame(animate)
 
     return () => {
-      window.removeEventListener("resize", () => resizeCanvas(canvas))
+      window.removeEventListener("resize", handleResize)
       window.removeEventListener("mousemove", handleMouseMove)
       window.removeEventListener("mouseleave", handleMouseLeave)
       if (animationFrameRef.current) {

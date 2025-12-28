@@ -155,8 +155,8 @@ const FileUpload = ({ isConnected }: FileUploadProps) => {
                   className="flex items-center justify-between p-2 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700"
                 >
                   <div className="flex items-center gap-2 overflow-hidden">
-                    <FileIcon className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-                    <span className="text-sm truncate max-w-[200px] text-slate-900 dark:text-slate-100">
+                    <FileIcon className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                    <span className="text-sm truncate max-w-50 text-slate-900 dark:text-slate-100">
                       {file.name}
                     </span>
                     <span className="text-xs text-slate-500 dark:text-slate-400">

@@ -1,5 +1,4 @@
 import { motion, AnimatePresence } from "framer-motion"
-import React from "react"
 import { Progress } from "../ui/progress"
 import { CheckCircle } from "lucide-react"
 

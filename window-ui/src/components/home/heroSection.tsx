@@ -74,13 +74,13 @@ const HeroSection = ({
                 <Share2 className="w-8 h-8 md:w-10 md:h-10 text-white" />
               </div>
             </div>
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold text-slate-900 dark:text-white leading-tight tracking-tight">
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-slate-900 dark:text-white leading-tight tracking-tight">
               Window
             </h1>
           </motion.div>
 
           <motion.p
-            className="text-lg md:text-xl lg:text-2xl text-slate-600 dark:text-slate-300 leading-relaxed max-w-lg mx-auto md:mx-0"
+            className="text-lg md:text-xl lg:text-2xl text-slate-600 dark:text-slate-300 leading-relaxed max-w-lg mx-auto md:mx-0 font-semibold"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.2 }}
