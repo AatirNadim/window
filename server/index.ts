@@ -1,6 +1,7 @@
 import { WebSocketServer, WebSocket } from "ws";
-import { ExtendedWebSocket, Room, WebSocketMessage } from "./utils/types";
 import { SocketService } from "./utils/socket";
+import { ExtendedWebSocket } from "./utils/constants";
+import { WebSocketMessage } from "@window/shared";
 
 const PORT = Number(process.env.PORT) || 8080;
 

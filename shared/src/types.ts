@@ -1,13 +1,6 @@
 // Shared types between client and server
 
 // WebRTC type definitions
-
-export type ExtendedWebSocket = WebSocket & {
-  userId?: string;
-  roomId?: string;
-  userName?: string;
-}
-
 interface RTCSessionDescriptionInit {
   type: "offer" | "answer" | "pranswer" | "rollback";
   sdp: string;
@@ -22,12 +15,12 @@ interface RTCIceCandidateInit {
 
 export interface User {
   id: string;
-  name?: string;
+  name: string;
 }
 
 export interface Room {
   id: string;
-  users: User[];
+  users: Array<User>;
 }
 
 // WebSocket message types
@@ -46,7 +39,7 @@ export interface JoinRoomMessage {
   type: "join-room";
   roomId: string;
   userId: string;
-  userName?: string;
+  userName: string;
 }
 
 export interface LeaveRoomMessage {

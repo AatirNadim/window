@@ -8,7 +8,7 @@ import type {
   LeaveRoomMessage,
   OfferMessage,
   WebSocketMessage,
-} from "@/types"
+} from "@window/shared"
 
 import { toast } from "sonner"
 import { useFileStore } from "../fileStore"

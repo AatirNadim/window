@@ -7,9 +7,9 @@ import { routeTree } from "./routeTree.gen"
 
 import "./styles.css"
 
-// @ts-expect-error
+// @ts-expect-error ignore
 import "@fontsource/inter"
-// @ts-expect-error
+// @ts-expect-error ignore
 import "@fontsource/montserrat"
 import reportWebVitals from "./reportWebVitals.ts"
 import { ThemeProvider } from "./components/theme-provider.tsx"
@@ -40,12 +40,7 @@ if (rootElement && !rootElement.innerHTML) {
     // <StrictMode>
     <ThemeProvider>
       <RouterProvider router={router} />
-      <Toaster
-        closeButton
-        position="top-right"
-        richColors
-        duration={2000}
-      />
+      <Toaster closeButton position="top-right" richColors duration={2000} />
     </ThemeProvider>,
     // </StrictMode>,
   )

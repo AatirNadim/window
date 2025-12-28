@@ -1,0 +1,4 @@
+packages:
+  - "window-ui"
+  - "server"
+  - "shared"
