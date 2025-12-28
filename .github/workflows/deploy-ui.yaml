@@ -3,7 +3,7 @@ name: Deploy UI to Netlify
 on:
   push:
     branches:
-      - main
+      - master
     paths:
       - "window-ui/**"
       - "packages/shared/**"
