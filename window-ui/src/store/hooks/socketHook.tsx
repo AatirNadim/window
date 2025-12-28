@@ -8,7 +8,7 @@ import type {
   LeaveRoomMessage,
   OfferMessage,
   WebSocketMessage,
-} from "@/types"
+} from "@window/shared"
 
 import { toast } from "sonner"
 import { useFileStore } from "../fileStore"
@@ -300,7 +300,8 @@ export const useSocket = () => {
 
     pc.ondatachannel = (event) => {
       const channel = event.channel
-      // dataChannelMap.current[remoteUserId] = channel
+      // whenever a data channel is recieved from remote peer, register it
+      dataChannelMap.current[remoteUserId] = channel
       console.debug(
         `Data channel established with remote user ${remoteUserId}:`,
         channel,
@@ -349,26 +350,6 @@ export const useSocket = () => {
         "new peer connection created and added to records for user:",
         remoteUserId,
       )
-
-      // create data channel for file transfer, so that it is ready when offer is created
-
-      console.debug(
-        "Creating data channel for file transfer with remote user after answer:",
-        remoteUserId,
-      )
-
-      const dataChannel = pc.createDataChannel("fileTransfer", {
-        ordered: true,
-      })
-
-      dataChannelMap.current[remoteUserId] = dataChannel
-
-      console.debug(
-        "Data channel created after answer:",
-        dataChannelMap.current[remoteUserId],
-      )
-
-      registerDataChannelListeners(dataChannel)
     } catch (error) {
       console.error("Error creating peer connection:", error)
       toast.error("Peer Connection Failed", {
@@ -394,6 +375,27 @@ export const useSocket = () => {
       }
 
       const pc = peerConnections.current[remoteUserId]
+
+      // create data channel for file transfer, so that it is ready when offer is created
+      // this data channel will be received by remote peer in ondatachannel event
+
+      console.debug(
+        "Creating data channel for file transfer with remote user after answer:",
+        remoteUserId,
+      )
+
+      const dataChannel = pc.createDataChannel("fileTransfer", {
+        ordered: true,
+      })
+
+      dataChannelMap.current[remoteUserId] = dataChannel
+
+      console.debug(
+        "Data channel created after answer:",
+        dataChannelMap.current[remoteUserId],
+      )
+
+      registerDataChannelListeners(dataChannel)
 
       console.debug("Creating offer for remote user:", remoteUserId)
 

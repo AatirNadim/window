@@ -26,8 +26,6 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { useFileStore } from "@/store/fileStore"
 import { useFile } from "@/store/hooks/fileHook"
 import { useSocket } from "@/store/hooks/socketHook"
-import GradientBackground from "@/components/home/gradientBackground"
-import BackgroundElementsAnimated from "@/components/home/backgroundElementsAnimated"
 import FileUpload from "@/components/room/fileUpload"
 import ProgressSection from "@/components/room/progress"
 import { RemoteUsersPanel } from "@/components/room/remoteUsersPanel"
@@ -178,12 +176,7 @@ export default function Room() {
           <RemoteUsersPanel remoteUsers={remoteUsers} />
         </SidebarContent>
       </Sidebar>
-      <div className="min-h-screen relative overflow-hidden w-full flex items-start justify-center">
-        {/* Background with gradient */}
-        <GradientBackground />
-
-        {/* Animated background elements */}
-        <BackgroundElementsAnimated />
+      <div className="min-h-screen relative overflow-hidden w-full flex items-start justify-center bg-white dark:bg-slate-900">
 
         <div className="absolute top-6 right-6 z-20">
           <ThemeToggle />
@@ -203,13 +196,12 @@ export default function Room() {
             transition={{ duration: 0.6 }}
             className="w-full md:max-w-2xl mx-auto md:mx-0 "
           >
-            <Card className="backdrop-blur-xl bg-white/80 dark:bg-gray-900/80 border-white/20 shadow-2xl">
+            <Card className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl">
               <CardHeader>
-                <CardTitle className="flex items-center justify-between text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-200 bg-clip-text text-transparent">
+                <CardTitle className="flex items-center justify-between text-2xl font-bold text-slate-900 dark:text-white">
                   <div className="flex items-start gap-3">
                     <div className="relative">
-                      <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg blur-lg opacity-75" />
-                      <div className="relative bg-gradient-to-r from-blue-600 to-purple-600 p-2 rounded-lg">
+                      <div className="bg-blue-600 dark:bg-blue-500 p-2 rounded-lg shadow-lg shadow-blue-600/20 dark:shadow-blue-500/20">
                         <Link className="w-5 h-5 text-white" />
                       </div>
                     </div>
@@ -231,7 +223,7 @@ export default function Room() {
                             description: "Room ID has been copied to clipboard",
                           })
                         }}
-                        className="h-8 px-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+                        className="h-8 px-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
                       >
                         <Copy className="w-4 h-4" />
                       </Button>
@@ -247,7 +239,7 @@ export default function Room() {
                       onClick={() => {
                         navigate({ to: "/" })
                       }}
-                      className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-white/30 dark:border-gray-600/30 hover:bg-white/90 dark:hover:bg-gray-700/90 text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white transition-all duration-200 shadow-sm hover:shadow-md font-bold"
+                      className="bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white transition-all duration-200 shadow-sm hover:shadow-md font-bold"
                     >
                       <ArrowLeft className="w-4 h-4 mr-2 font-bold" />
                       <span className="font-extrabold">Leave</span>
@@ -265,7 +257,7 @@ export default function Room() {
                     >
                       {getStatusIcon}
                     </motion.div>
-                    <span className="text-gray-600 dark:text-gray-300">
+                    <span className="text-slate-600 dark:text-slate-300">
                       {status}
                     </span>
                     <motion.span
@@ -278,7 +270,7 @@ export default function Room() {
                     />
                   </div>
                   {userName && (
-                    <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                    <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
                       <User className="w-4 h-4" />
                       <span>{userName}</span>
                     </div>
@@ -298,7 +290,7 @@ export default function Room() {
                     disabled={
                       filesToBeSent.length === 0 || isSending || !isConnected
                     }
-                    className="w-full h-14 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200 text-lg"
+                    className="w-full h-14 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-semibold shadow-lg shadow-blue-600/20 dark:shadow-blue-500/20 hover:shadow-xl hover:shadow-blue-600/30 dark:hover:shadow-blue-500/30 transition-all duration-300 text-lg"
                   >
                     {isSending ? (
                       <>
@@ -333,8 +325,8 @@ export default function Room() {
                 />
 
                 {/* Connection Status Info */}
-                <div className="text-center p-4 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800/50 dark:to-gray-700/50 rounded-xl">
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                <div className="text-center p-4 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700">
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
                     {isConnected
                       ? "🔒 Secure peer-to-peer connection established"
                       : "⏳ Establishing secure connection..."}
@@ -351,11 +343,11 @@ export default function Room() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="flex items-center gap-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-white/30 dark:border-gray-600/30 text-gray-700 dark:text-gray-200"
+                  className="flex items-center gap-2 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 shadow-sm hover:shadow-md transition-all duration-200"
                 >
                   <Users className="w-4 h-4" />
-                  <span className="text-xs">Connected peers from sheet</span>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                  <span className="text-xs">Connected peers</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400">
                     {remoteUserCount}
                   </span>
                 </Button>

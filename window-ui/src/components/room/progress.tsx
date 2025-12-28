@@ -1,5 +1,4 @@
 import { motion, AnimatePresence } from "framer-motion"
-import React from "react"
 import { Progress } from "../ui/progress"
 import { CheckCircle } from "lucide-react"
 
@@ -23,20 +22,20 @@ const ProgressSection = ({
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: "auto" }}
           exit={{ opacity: 0, height: 0 }}
-          className="space-y-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl border border-blue-200/50 dark:border-blue-700/50"
+          className="space-y-4 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-xl border border-blue-200 dark:border-blue-800"
         >
           <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+            <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
               {isSending ? "Sending" : "Receiving"}:{" "}
               {file?.name || receivedFileInfo?.name}
             </p>
-            <span className="text-sm text-gray-600 dark:text-gray-400">
+            <span className="text-sm text-slate-600 dark:text-slate-400">
               {Math.round(transferProgress)}%
             </span>
           </div>
           <Progress
             value={transferProgress}
-            className="h-3 bg-white/50 dark:bg-gray-800/50"
+            className="h-3 bg-white dark:bg-slate-800"
           />
           {transferProgress === 100 && (
             <motion.div

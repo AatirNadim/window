@@ -13,9 +13,8 @@ import {
   UserLeftMessage,
   ErrorMessage,
   RoomFullMessage,
-  ExtendedWebSocket,
-} from "./types";
-import { MAX_USERS_PER_ROOM } from "./constants";
+} from "@window/shared";
+import { ExtendedWebSocket, MAX_USERS_PER_ROOM } from "./constants";
 
 export class SocketService {
   private rooms: Map<string, Room>;
