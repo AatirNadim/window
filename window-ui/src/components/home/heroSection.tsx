@@ -143,7 +143,7 @@ const HeroSection = ({
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.4 }}
       >
-        <Card className="w-[360px] md:w-[440px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl hover:shadow-2xl transition-shadow duration-300">
+        <Card className="w-90 md:w-110 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl hover:shadow-2xl transition-shadow duration-300">
           <CardHeader className="text-center pb-6 md:pb-8">
             <CardTitle className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white">
               Start Sharing

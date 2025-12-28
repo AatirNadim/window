@@ -8,9 +8,7 @@ const MAX_FILES_TO_SEND_TOGETHER = 5
 
 const serverPort: string = import.meta.env.VITE_SERVER_PORT || "8080"
 
-const serverPath = `${
-  import.meta.env.VITE_SERVER_PATH || "localhost"
-}:${serverPort}`
+const serverPath = import.meta.env.VITE_SERVER_PATH || `localhost:${serverPort}`
 
 export {
   CHUNK_SIZE,

@@ -1,0 +1,55 @@
+name: Deploy UI to Netlify
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "window-ui/**"
+      - "packages/shared/**"
+      - ".github/workflows/deploy-ui.yaml"
+
+  # Allow manual trigger
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ui_env
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Update Netlify Environment Variables
+        run: |
+          # Update environment variables using Netlify API
+          curl -X PUT "https://api.netlify.com/api/v1/accounts/${{ secrets.NETLIFY_ACCOUNT_SLUG }}/env/VITE_SERVER_PATH" \
+            -H "Authorization: Bearer ${{ secrets.NETLIFY_AUTH_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "key": "VITE_WS_URL",
+              "scopes": ["builds", "functions", "runtime", "post_processing"],
+              "values": [
+                {
+                  "context": "all",
+                  "value": "${{ secrets.SERVER_PATH }}"
+                }
+              ]
+            }' \
+            --fail \
+            --silent \
+            --show-error
+
+      - name: Trigger Netlify Deploy
+        run: |
+          curl -X POST "${{ secrets.NETLIFY_DEPLOY_HOOK }}" \
+            -H "Content-Type: application/json" \
+            -d '{}' \
+            --fail \
+            --silent \
+            --show-error
+
+      - name: Deployment Triggered
+        run: |
+          echo " == Environment variables updated == "
+          echo " == Netlify deployment triggered successfully == "
