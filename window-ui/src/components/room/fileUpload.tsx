@@ -84,8 +84,8 @@ const FileUpload = ({ isConnected }: FileUploadProps) => {
       <motion.div
         className={`relative p-8 border-2 border-dashed rounded-xl text-center transition-all duration-300 ${
           dragOver
-            ? "border-blue-500 bg-blue-50/50 dark:bg-blue-900/20"
-            : "border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500"
+            ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30"
+            : "border-slate-300 dark:border-slate-600 hover:border-blue-400 dark:hover:border-blue-500"
         } ${!isConnected ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
         onDrop={handleDrop}
         onDragOver={(e) => {
@@ -112,12 +112,12 @@ const FileUpload = ({ isConnected }: FileUploadProps) => {
             animate={dragOver ? { scale: 1.1 } : { scale: 1 }}
             transition={{ duration: 0.2 }}
           >
-            <FileUp className="mx-auto h-16 w-16 text-gray-400 dark:text-gray-500 mb-4" />
+            <FileUp className="mx-auto h-16 w-16 text-slate-400 dark:text-slate-500 mb-4" />
           </motion.div>
-          <span className="block text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+          <span className="block text-lg font-medium text-slate-900 dark:text-slate-100 mb-2">
             Drop files here or click to select
           </span>
-          <span className="text-sm text-gray-500 dark:text-gray-400">
+          <span className="text-sm text-slate-500 dark:text-slate-400">
             Max {MAX_FILES_TO_SEND_TOGETHER} files,{" "}
             {MAX_FILE_SIZE_MB_MULTIPLE_SEND}MB each
           </span>
@@ -133,13 +133,13 @@ const FileUpload = ({ isConnected }: FileUploadProps) => {
             className="space-y-2"
           >
             <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Selected Files ({filesToBeSent.length}/
                 {MAX_FILES_TO_SEND_TOGETHER})
               </span>
               <button
                 onClick={clearFilesToBeSent}
-                className="text-xs text-red-500 hover:text-red-600 flex items-center gap-1"
+                className="text-xs text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 flex items-center gap-1 transition-colors"
                 disabled={isSending}
               >
                 <Trash2 className="w-3 h-3" /> Clear All
@@ -152,23 +152,23 @@ const FileUpload = ({ isConnected }: FileUploadProps) => {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
-                  className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+                  className="flex items-center justify-between p-2 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700"
                 >
                   <div className="flex items-center gap-2 overflow-hidden">
-                    <FileIcon className="w-4 h-4 text-blue-500 flex-shrink-0" />
-                    <span className="text-sm truncate max-w-[200px]">
+                    <FileIcon className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                    <span className="text-sm truncate max-w-[200px] text-slate-900 dark:text-slate-100">
                       {file.name}
                     </span>
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-slate-500 dark:text-slate-400">
                       ({(file.size / 1024 / 1024).toFixed(2)} MB)
                     </span>
                   </div>
                   <button
                     onClick={() => removeFile(file.name)}
                     disabled={isSending}
-                    className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors"
+                    className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition-colors"
                   >
-                    <XCircle className="w-4 h-4 text-gray-500 hover:text-red-500" />
+                    <XCircle className="w-4 h-4 text-slate-500 hover:text-red-500 dark:text-slate-400 dark:hover:text-red-400" />
                   </button>
                 </motion.div>
               ))}

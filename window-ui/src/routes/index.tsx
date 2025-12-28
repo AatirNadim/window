@@ -5,9 +5,8 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { useUserStore } from "@/store"
 import { isValidUUID } from "@/lib/utils"
 import GradientBackground from "@/components/home/gradientBackground"
-import BackgroundElementsAnimated from "@/components/home/backgroundElementsAnimated"
-import MobileLayout from "@/components/home/mobileLayout"
-import DesktopLayout from "@/components/home/desktopLayout"
+import AnimatedDotsBackground from "@/components/home/animatedDotsBackground"
+import HeroSection from "@/components/home/heroSection"
 
 export const Route = createFileRoute("/")({
   component: Home,
@@ -56,11 +55,11 @@ export default function Home() {
   return (
     <div className="min-h-screen relative overflow-hidden">
       
-        {/* Background with gradient */}
+        {/* Background with solid color */}
         <GradientBackground />
 
-        {/* Animated background elements */}
-        <BackgroundElementsAnimated />
+        {/* Animated dots background */}
+        <AnimatedDotsBackground />
 
         {/* Theme toggle */}
         <div className="absolute top-6 right-6 z-20">
@@ -68,18 +67,9 @@ export default function Home() {
         </div>
 
         {/* Main content */}
-        <div className="relative z-5 min-h-screen flex items-center justify-center px-4 py-12">
+        <div className="relative z-10 min-h-screen flex items-center justify-center px-4 py-12">
           <div className="w-full max-w-7xl mx-auto">
-            {/* Mobile/Tablet Layout (Vertical) */}
-            <MobileLayout
-              roomId={roomId}
-              setRoomId={setRoomId}
-              handleCreateRoom={handleCreateRoom}
-              handleJoinRoom={handleJoinRoom}
-            />
-
-            {/* Desktop Layout (Horizontal) */}
-            <DesktopLayout
+            <HeroSection
               roomId={roomId}
               setRoomId={setRoomId}
               handleCreateRoom={handleCreateRoom}
