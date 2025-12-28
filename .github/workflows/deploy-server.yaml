@@ -27,7 +27,7 @@ jobs:
             -H "Content-Type: application/json" \
             -d '[
               {"key": "NODE_ENV", "value": "production"},
-              {"key": "PORT", "value": "10000"},
+              {"key": "PORT", "value": "10000"}
             ]' \
             --fail \
             --silent \
