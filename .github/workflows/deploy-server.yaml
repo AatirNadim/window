@@ -7,7 +7,7 @@ on:
     paths:
       - "server/**"
       - "packages/shared/**"
-      - ".github/workflows/deploy-server.yml"
+      - ".github/workflows/deploy-server.yaml"
 
   # Allow manual trigger
   workflow_dispatch:
