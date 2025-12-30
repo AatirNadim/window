@@ -25,9 +25,8 @@ const ProgressSection = ({
           className="space-y-4 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-xl border border-blue-200 dark:border-blue-800"
         >
           <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-              {isSending ? "Sending" : "Receiving"}:{" "}
-              {file?.name || receivedFileInfo?.name}
+            <p className="text-sm font-medium text-slate-900 dark:text-slate-100 min-w-0 truncate">
+              {isSending ? "Sending" : "Receiving"}: {file?.name || receivedFileInfo?.name}
             </p>
             <span className="text-sm text-slate-600 dark:text-slate-400">
               {Math.round(transferProgress)}%

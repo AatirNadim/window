@@ -7,7 +7,7 @@ Window is a modern, secure, and ephemeral file-sharing application that enables 
 - **Peer-to-Peer Transfer:** Files are transferred directly between users using WebRTC Data Channels. No files are ever stored on the server.
 - **Room-Based Sharing:** Users join unique rooms via UUIDs to connect with peers.
 - **Ephemeral Identity:** User identities are temporary and session-based. Reloading the page maintains the session, but closing the tab clears the room state.
-- **Multi-Channel Architecture:** Large files and multiple files are distributed across multiple data channels for efficient transfer.
+- **Multi-Channel Architecture:** Large files and multiple files are distributed across multiple dynamically created data channels for efficient transfer.
 - **Secure & Private:** Direct P2P connection ensures data privacy. The signaling server only brokers the initial connection.
 
 ## 🛠 Tech Stack
@@ -17,7 +17,8 @@ Window is a modern, secure, and ephemeral file-sharing application that enables 
 - **Framework:** React (Vite)
 - **State Management:** Zustand (with `sessionStorage` persistence)
 - **Routing:** TanStack Router
-- **Styling:** Tailwind CSS, Framer Motion, Shadcn UI
+- **Styling:** Tailwind CSS, Framer Motion, Shadcn UI, Lucide React
+- **Notifications:** Sonner
 - **Protocol:** WebRTC (RTCPeerConnection, RTCDataChannel)
 
 ### Backend (`server`)
@@ -62,7 +63,7 @@ sequenceDiagram
 
 The application uses a robust multi-channel approach to handle file transfers efficiently.
 
-- **Chunking:** Files are split into chunks (default 16KB) to prevent blocking the main thread and ensure smooth transmission.
+- **Chunking:** Files are split into chunks (default 64KB) to prevent blocking the main thread and ensure smooth transmission.
 - **Round-Robin Distribution:** When sending multiple files, they are distributed across available data channels to maximize throughput.
 - **Backpressure Handling:** The sender monitors the `bufferedAmount` of the data channel. If the buffer fills up (e.g., >10MB), sending pauses until the buffer drains, preventing memory overflows.
 
@@ -96,7 +97,7 @@ pnpm dev
 cd window-ui
 pnpm install
 pnpm dev
-# Client runs on http://localhost:5173
+# Client runs on http://localhost:3000
 ```
 
 ## 🤝 Contributing

@@ -82,7 +82,7 @@ const FileUpload = ({ isConnected }: FileUploadProps) => {
   return (
     <div className="space-y-4">
       <motion.div
-        className={`relative p-8 border-2 border-dashed rounded-xl text-center transition-all duration-300 ${
+        className={`relative p-4 sm:p-8 border-2 border-dashed rounded-xl text-center transition-all duration-300 ${
           dragOver
             ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30"
             : "border-slate-300 dark:border-slate-600 hover:border-blue-400 dark:hover:border-blue-500"
@@ -112,12 +112,12 @@ const FileUpload = ({ isConnected }: FileUploadProps) => {
             animate={dragOver ? { scale: 1.1 } : { scale: 1 }}
             transition={{ duration: 0.2 }}
           >
-            <FileUp className="mx-auto h-16 w-16 text-slate-400 dark:text-slate-500 mb-4" />
+            <FileUp className="mx-auto h-12 w-12 sm:h-16 sm:w-16 text-slate-400 dark:text-slate-500 mb-3 sm:mb-4" />
           </motion.div>
-          <span className="block text-lg font-medium text-slate-900 dark:text-slate-100 mb-2">
+          <span className="block text-base sm:text-lg font-medium text-slate-900 dark:text-slate-100 mb-2">
             Drop files here or click to select
           </span>
-          <span className="text-sm text-slate-500 dark:text-slate-400">
+          <span className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
             Max {MAX_FILES_TO_SEND_TOGETHER} files,{" "}
             {MAX_FILE_SIZE_MB_MULTIPLE_SEND}MB each
           </span>
@@ -154,12 +154,12 @@ const FileUpload = ({ isConnected }: FileUploadProps) => {
                   exit={{ opacity: 0, x: 20 }}
                   className="flex items-center justify-between p-2 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700"
                 >
-                  <div className="flex items-center gap-2 overflow-hidden">
+                  <div className="flex items-center gap-2 overflow-hidden min-w-0">
                     <FileIcon className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
-                    <span className="text-sm truncate max-w-50 text-slate-900 dark:text-slate-100">
+                    <span className="text-sm truncate min-w-0 text-slate-900 dark:text-slate-100">
                       {file.name}
                     </span>
-                    <span className="text-xs text-slate-500 dark:text-slate-400">
+                    <span className="text-xs text-slate-500 dark:text-slate-400 shrink-0">
                       ({(file.size / 1024 / 1024).toFixed(2)} MB)
                     </span>
                   </div>

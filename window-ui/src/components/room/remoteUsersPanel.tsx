@@ -8,7 +8,7 @@ export function RemoteUsersPanel({ remoteUsers }: RemoteUsersPanelProps) {
   const count = Object.keys(remoteUsers || {}).length
 
   return (
-    <section className="flex flex-col p-2 h-full">
+    <section className="flex flex-col p-2 h-full min-h-0">
       <div className="flex items-center justify-between mb-3 px-1">
         <div className="flex items-center gap-2">
           <Users className="w-4 h-4 text-slate-600 dark:text-slate-300" />
@@ -21,7 +21,7 @@ export function RemoteUsersPanel({ remoteUsers }: RemoteUsersPanelProps) {
         </span>
       </div>
 
-      <div className="flex-1 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-2 py-2 overflow-y-auto space-y-2">
+      <div className="flex-1 min-h-0 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-2 py-2 overflow-y-auto space-y-2">
         {count === 0 ? (
           <p className="text-xs text-slate-500 dark:text-slate-400 text-center py-6">
             No remote users connected yet.
