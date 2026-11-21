@@ -97,11 +97,12 @@ export default function Room() {
 
   return (
     <SidebarProvider>
-      <Sidebar side="left" className="hidden lg:flex">
+      <Sidebar side="left" className="room-sharing-sidebar hidden lg:flex">
         <SidebarContent><RemoteUsersPanel remoteUsers={remoteUsers} /></SidebarContent>
       </Sidebar>
-      <main className="min-h-svh w-full min-w-0 bg-background">
-        <header className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 py-4 sm:px-6 lg:px-8">
+      <main className="relative isolate min-h-svh w-full min-w-0 bg-background">
+        <div aria-hidden="true" className="room-dotted-background pointer-events-none absolute inset-0 z-0" />
+        <header className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 py-4 sm:px-6 lg:px-8">
           <Button variant="ghost" onClick={() => navigate({ to: "/" })} className="min-h-11 px-2 sm:px-3">
             <ArrowLeft size={17} /><span>Home</span>
           </Button>
@@ -123,7 +124,7 @@ export default function Room() {
           </div>
         </header>
 
-        <div className="mx-auto w-full max-w-6xl px-4 pb-10 sm:px-6 lg:px-8">
+        <div className="relative z-10 mx-auto w-full max-w-6xl px-4 pb-10 sm:px-6 lg:px-8">
           <motion.div initial={reducedMotion ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: reducedMotion ? 0 : 0.18 }} className="mx-auto w-full max-w-3xl">
             <Card className="overflow-hidden rounded-2xl border-border shadow-sm">
               <CardHeader className="gap-5 border-b border-border p-5 sm:p-7">

@@ -12,9 +12,9 @@ type HeroSectionProps = {
 }
 
 const proofPoints = [
-  { icon: Radio, title: "Direct transfer", detail: "Files move between browsers over WebRTC." },
-  { icon: ShieldCheck, title: "Private by design", detail: "The signaling server does not store file contents." },
-  { icon: FileUp, title: "Clear file limits", detail: "Up to 5 files; 50 MB for one file or 6 MB each in a batch." },
+  { icon: Radio, title: "Direct transfer", detail: "Files move between browsers over WebRTC.", tone: "default" },
+  { icon: ShieldCheck, title: "Private by design", detail: "The signaling server does not store file contents.", tone: "pink" },
+  { icon: FileUp, title: "Clear file limits", detail: "Up to 5 files; 50 MB for one file or 6 MB each in a batch.", tone: "default" },
 ]
 
 export default function HeroSection({ roomId, setRoomId, handleCreateRoom, handleJoinRoom }: HeroSectionProps) {
@@ -27,9 +27,12 @@ export default function HeroSection({ roomId, setRoomId, handleCreateRoom, handl
         transition={{ duration: reducedMotion ? 0 : 0.2 }}
         className="min-w-0"
       >
-        <div className="inline-flex items-center gap-2 rounded-lg text-sm font-semibold tracking-tight text-foreground">
-          <span className="grid size-9 place-items-center rounded-xl bg-primary text-primary-foreground"><Radio size={18} /></span>
-          Window
+        <div className="inline-flex items-center gap-3 text-foreground">
+            <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-sm"><Radio size={23} strokeWidth={1.8} /></span>
+          <span className="relative inline-block pb-2 text-[clamp(3rem,5.5vw,4.25rem)] font-bold leading-none tracking-[-0.04em]">
+            win<span className="text-primary">dow</span>
+            <span aria-hidden="true" className="absolute bottom-0 left-0 h-1 w-10 rounded-full bg-pink-accent" />
+          </span>
         </div>
         <p className="mt-10 text-sm font-semibold text-primary">A room for the files you want to share</p>
         <h1 className="mt-3 max-w-[12ch] text-[clamp(2.5rem,6vw,3.75rem)] font-semibold leading-[1.04] tracking-[-0.045em] text-foreground">
@@ -40,9 +43,9 @@ export default function HeroSection({ roomId, setRoomId, handleCreateRoom, handl
         </p>
 
         <ul className="mt-9 grid gap-5 sm:grid-cols-2 lg:grid-cols-1" aria-label="How Window works">
-          {proofPoints.map(({ icon: Icon, title, detail }) => (
+          {proofPoints.map(({ icon: Icon, title, detail, tone }) => (
             <li key={title} className="flex gap-3">
-              <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-lg bg-accent text-accent-foreground"><Icon size={17} /></span>
+              <span className={`mt-0.5 grid size-8 shrink-0 place-items-center rounded-lg ${tone === "pink" ? "bg-pink-accent text-pink-accent-foreground" : "bg-accent text-accent-foreground"}`}><Icon size={17} /></span>
               <span><strong className="block text-sm font-semibold">{title}</strong><span className="mt-0.5 block max-w-md text-sm leading-5 text-muted-foreground">{detail}</span></span>
             </li>
           ))}

@@ -22,7 +22,7 @@ export default function ProgressSection({ isSending, transferProgress, file, rec
         <motion.section initial={reducedMotion ? false : { opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-3 rounded-xl border border-border bg-muted/40 p-4" aria-label="File transfer status">
           <div className="flex min-w-0 items-start justify-between gap-3">
             <div className="flex min-w-0 items-start gap-2">
-              {receivedFileInfo && !isSending ? <ArrowDownToLine size={17} className="mt-0.5 shrink-0 text-primary" /> : <span className="mt-1 size-2 shrink-0 rounded-full bg-primary" />}
+              {receivedFileInfo && !isSending ? <span className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-md bg-pink-accent text-pink-accent-foreground"><ArrowDownToLine size={15} /></span> : <span className="mt-1 size-2 shrink-0 rounded-full bg-primary" />}
               <div className="min-w-0">
                 <p className="text-sm font-medium">{isSending ? "Sending" : receivedFileInfo ? "Received" : complete ? "Transfer complete" : "Receiving"}</p>
                 <p className="truncate text-sm text-muted-foreground" title={name}>{name}</p>

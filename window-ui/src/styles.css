@@ -22,6 +22,8 @@
   --accent-foreground: #131b2b;
   --destructive: #a83333;
   --destructive-foreground: #ffffff;
+  --pink-accent: #e8a9b9;
+  --pink-accent-foreground: #131b2b;
   --success: #23634f;
   --warning: #75500b;
   --border: #d1dee2;
@@ -40,6 +42,12 @@
   --sidebar-accent-foreground: #131b2b;
   --sidebar-border: #d1dee2;
   --sidebar-ring: #5b91a3;
+  --window-grid-line: color-mix(in srgb, #2f4a63 2%, transparent);
+  --window-cell-ink: #131b2b;
+  --window-cell-blue: #2f4a63;
+  --window-cell-teal: #5b91a3;
+  --window-cell-mint: #cfeae0;
+  --window-cell-pink: var(--pink-accent);
   font-family: "Figtree Variable", Figtree, sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -82,6 +90,24 @@
   --sidebar-accent-foreground: #cfeae0;
   --sidebar-border: #5b91a3;
   --sidebar-ring: #cfeae0;
+  --window-grid-line: color-mix(in srgb, #cfeae0 2%, transparent);
+}
+
+.room-dotted-background {
+  background-image: radial-gradient(var(--primary) 1px, transparent 1.25px);
+  background-position: 0 0;
+  background-size: 24px 24px;
+  opacity: 0.1;
+}
+
+.room-sharing-sidebar [data-sidebar="sidebar"] {
+  background-color: transparent;
+  background-image: radial-gradient(
+    color-mix(in srgb, var(--primary) 10%, transparent) 1px,
+    transparent 1.25px
+  );
+  background-position: 0 0;
+  background-size: 24px 24px;
 }
 
 @theme inline {
@@ -105,6 +131,8 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-pink-accent: var(--pink-accent);
+  --color-pink-accent-foreground: var(--pink-accent-foreground);
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-border: var(--border);

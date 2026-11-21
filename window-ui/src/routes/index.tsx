@@ -5,7 +5,7 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { useUserStore } from "@/store"
 import { isValidUUID } from "@/lib/utils"
 import HeroSection from "@/components/home/heroSection"
-import AnimatedDotsBackground from "@/components/home/animatedDotsBackground"
+import InfiniteWindowBackground from "@/components/home/infiniteWindowBackground"
 
 export const Route = createFileRoute("/")({
   component: Home,
@@ -53,7 +53,7 @@ export default function Home() {
 
   return (
     <div className="relative isolate min-h-svh bg-background">
-      <AnimatedDotsBackground />
+      <InfiniteWindowBackground />
       <header className="relative z-10 mx-auto flex w-full max-w-6xl justify-end px-4 pt-4 sm:px-6 lg:px-8">
         <ThemeToggle />
       </header>
