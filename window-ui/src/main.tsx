@@ -7,14 +7,6 @@ import { routeTree } from "./routeTree.gen"
 
 import "./styles.css"
 
-// @ts-expect-error ignore
-import "@fontsource/inter"
-// @ts-expect-error ignore
-import "@fontsource/montserrat"
-
-// @ts-expect-error ignore
-import "@fontsource-variable/figtree"
-
 import reportWebVitals from "./reportWebVitals.ts"
 import { ThemeProvider } from "./components/theme-provider.tsx"
 import { Toaster } from "./components/ui/sonner.tsx"

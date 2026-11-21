@@ -4,8 +4,6 @@ import { toast } from "sonner"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { useUserStore } from "@/store"
 import { isValidUUID } from "@/lib/utils"
-import GradientBackground from "@/components/home/gradientBackground"
-import AnimatedDotsBackground from "@/components/home/animatedDotsBackground"
 import HeroSection from "@/components/home/heroSection"
 
 export const Route = createFileRoute("/")({
@@ -53,30 +51,18 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
-      
-        {/* Background with solid color */}
-        <GradientBackground />
-
-        {/* Animated dots background */}
-        <AnimatedDotsBackground />
-
-        {/* Theme toggle */}
-        <div className="absolute top-6 right-6 z-20">
-          <ThemeToggle />
-        </div>
-
-        {/* Main content */}
-        <div className="relative z-10 min-h-screen flex items-center justify-center px-4 py-12">
-          <div className="w-full max-w-7xl mx-auto">
-            <HeroSection
-              roomId={roomId}
-              setRoomId={setRoomId}
-              handleCreateRoom={handleCreateRoom}
-              handleJoinRoom={handleJoinRoom}
-            />
-          </div>
-        </div>
+    <div className="min-h-svh bg-background">
+      <header className="mx-auto flex w-full max-w-6xl justify-end px-4 pt-4 sm:px-6 lg:px-8">
+        <ThemeToggle />
+      </header>
+      <div className="px-4 sm:px-6 lg:px-8">
+        <HeroSection
+          roomId={roomId}
+          setRoomId={setRoomId}
+          handleCreateRoom={handleCreateRoom}
+          handleJoinRoom={handleJoinRoom}
+        />
+      </div>
     </div>
   )
 }
