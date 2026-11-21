@@ -1,57 +1,32 @@
-import { Users } from "lucide-react"
+import { Users, Wifi } from "lucide-react"
 
-interface RemoteUsersPanelProps {
-  remoteUsers: Record<string, string | undefined> | undefined
-}
+interface RemoteUsersPanelProps { remoteUsers: Record<string, string | undefined> | undefined }
 
 export function RemoteUsersPanel({ remoteUsers }: RemoteUsersPanelProps) {
-  const count = Object.keys(remoteUsers || {}).length
-
+  const peers = Object.entries(remoteUsers || {})
   return (
-    <section className="flex flex-col p-2 h-full min-h-0">
-      <div className="flex items-center justify-between mb-3 px-1">
-        <div className="flex items-center gap-2">
-          <Users className="w-4 h-4 text-slate-600 dark:text-slate-300" />
-          <span className="font-semibold text-sm text-slate-800 dark:text-slate-100">
-            Connected peers
-          </span>
-        </div>
-        <span className="text-xs text-slate-500 dark:text-slate-400">
-          {count}
-        </span>
+    <section className="flex h-full min-h-0 flex-col gap-3 p-3" aria-labelledby="connected-peers-heading">
+      <div className="flex items-center justify-between px-1">
+        <h2 id="connected-peers-heading" className="flex items-center gap-2 text-sm font-semibold"><Users size={16} className="text-muted-foreground" />Connected peers</h2>
+        <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground" aria-label={`${peers.length} connected peers`}>{peers.length}</span>
       </div>
-
-      <div className="flex-1 min-h-0 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-2 py-2 overflow-y-auto space-y-2">
-        {count === 0 ? (
-          <p className="text-xs text-slate-500 dark:text-slate-400 text-center py-6">
-            No remote users connected yet.
-          </p>
-        ) : (
-          Object.entries(remoteUsers || {}).map(([id, name]) => (
-            <div
-              key={id}
-              className="flex items-center justify-between rounded-lg bg-white dark:bg-slate-800 px-2 py-2 shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-md transition-shadow duration-200"
-            >
-              <div className="flex items-center gap-2 min-w-0">
-                <div className="h-6 w-6 rounded-full bg-blue-600 dark:bg-blue-500 flex items-center justify-center text-[10px] font-semibold text-white shadow-sm shadow-blue-600/20 dark:shadow-blue-500/20">
-                  {String(name || id)
-                    .trim()
-                    .charAt(0)
-                    .toUpperCase() || "?"}
-                </div>
-                <div className="flex flex-col min-w-0">
-                  <span className="text-xs font-medium text-slate-800 dark:text-slate-100 truncate">
-                    {name || "Unknown"}
-                  </span>
-                  <span className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
-                    {id}
-                  </span>
-                </div>
-              </div>
-              <span className="inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-            </div>
-          ))
-        )}
+      <div className="min-h-0 flex-1 space-y-2 overflow-y-auto rounded-xl border border-border bg-muted/40 p-2">
+        {peers.length === 0 ? (
+          <div className="px-3 py-8 text-center">
+            <Users size={20} className="mx-auto text-muted-foreground" />
+            <p className="mt-2 text-sm font-medium">No one here yet</p>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">Copy the invite link to bring someone into this room.</p>
+          </div>
+        ) : peers.map(([id, name]) => (
+          <div key={id} className="flex min-w-0 items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5">
+            <span className="grid size-8 shrink-0 place-items-center rounded-full bg-accent text-sm font-semibold text-accent-foreground">{String(name || id).trim().charAt(0).toUpperCase() || "?"}</span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-sm font-medium">{name || "Unknown peer"}</span>
+              <span className="block truncate text-xs text-muted-foreground" title={id}>{id}</span>
+            </span>
+            <span className="flex shrink-0 items-center gap-1 text-xs text-success"><Wifi size={14} />Online</span>
+          </div>
+        ))}
       </div>
     </section>
   )

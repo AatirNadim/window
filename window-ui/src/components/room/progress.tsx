@@ -1,6 +1,6 @@
-import { motion, AnimatePresence } from "framer-motion"
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion"
 import { Progress } from "../ui/progress"
-import { CheckCircle } from "lucide-react"
+import { CheckCircle2, ArrowDownToLine } from "lucide-react"
 
 type ProgressSectionProps = {
   isSending: boolean
@@ -9,47 +9,32 @@ type ProgressSectionProps = {
   receivedFileInfo: { name: string } | null
 }
 
-const ProgressSection = ({
-  isSending,
-  transferProgress,
-  file,
-  receivedFileInfo,
-}: ProgressSectionProps) => {
+export default function ProgressSection({ isSending, transferProgress, file, receivedFileInfo }: ProgressSectionProps) {
+  const reducedMotion = useReducedMotion()
+  const isVisible = isSending || transferProgress > 0 || Boolean(receivedFileInfo)
+  const name = file?.name || receivedFileInfo?.name || "File transfer"
+  const progress = Math.max(0, Math.min(100, Math.round(transferProgress)))
+  const complete = !isSending && progress === 100
+
   return (
-    <AnimatePresence>
-      {(isSending || transferProgress > 0) && (
-        <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: "auto" }}
-          exit={{ opacity: 0, height: 0 }}
-          className="space-y-4 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-xl border border-blue-200 dark:border-blue-800"
-        >
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-slate-900 dark:text-slate-100 min-w-0 truncate">
-              {isSending ? "Sending" : "Receiving"}: {file?.name || receivedFileInfo?.name}
-            </p>
-            <span className="text-sm text-slate-600 dark:text-slate-400">
-              {Math.round(transferProgress)}%
-            </span>
+    <AnimatePresence initial={false}>
+      {isVisible && (
+        <motion.section initial={reducedMotion ? false : { opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-3 rounded-xl border border-border bg-muted/40 p-4" aria-label="File transfer status">
+          <div className="flex min-w-0 items-start justify-between gap-3">
+            <div className="flex min-w-0 items-start gap-2">
+              {receivedFileInfo && !isSending ? <span className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-md bg-pink-accent text-pink-accent-foreground"><ArrowDownToLine size={15} /></span> : <span className="mt-1 size-2 shrink-0 rounded-full bg-primary" />}
+              <div className="min-w-0">
+                <p className="text-sm font-medium">{isSending ? "Sending" : receivedFileInfo ? "Received" : complete ? "Transfer complete" : "Receiving"}</p>
+                <p className="truncate text-sm text-muted-foreground" title={name}>{name}</p>
+              </div>
+            </div>
+            <span className="shrink-0 text-sm font-medium tabular-nums">{progress}%</span>
           </div>
-          <Progress
-            value={transferProgress}
-            className="h-3 bg-white dark:bg-slate-800"
-          />
-          {transferProgress === 100 && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="flex items-center justify-center text-green-600 dark:text-green-400"
-            >
-              <CheckCircle className="w-5 h-5 mr-2" />
-              <span className="font-medium">Transfer Complete!</span>
-            </motion.div>
-          )}
-        </motion.div>
+          <Progress value={progress} aria-label={`${isSending ? "Sending" : "Receiving"} ${name}`} aria-valuetext={`${progress}% complete`} className="h-2" />
+          {complete && <p role="status" aria-live="polite" className="flex items-center gap-2 text-sm font-medium text-success"><CheckCircle2 size={16} />Transfer complete</p>}
+          {receivedFileInfo && <p className="text-xs text-muted-foreground">The received file is ready in your browser’s download.</p>}
+        </motion.section>
       )}
     </AnimatePresence>
   )
 }
-
-export default ProgressSection

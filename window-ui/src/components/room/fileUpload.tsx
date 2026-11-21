@@ -1,182 +1,97 @@
-import {
-  MAX_FILE_SIZE_MB_MULTIPLE_SEND,
-  MAX_FILE_SIZE_SINGLE_SEND,
-  MAX_FILES_TO_SEND_TOGETHER,
-} from "@/lib/constants"
+import { MAX_FILE_SIZE_MB_MULTIPLE_SEND, MAX_FILE_SIZE_SINGLE_SEND, MAX_FILES_TO_SEND_TOGETHER } from "@/lib/constants"
 import { useFileStore } from "@/store/fileStore"
-import { motion, AnimatePresence } from "framer-motion"
-import { FileUp, XCircle, File as FileIcon, Trash2 } from "lucide-react"
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion"
+import { File as FileIcon, FileUp, Trash2, X } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
+import { Button } from "@/components/ui/button"
 
-type FileUploadProps = {
-  isConnected: boolean
-}
+type FileUploadProps = { isConnected: boolean }
 
 const FileUpload = ({ isConnected }: FileUploadProps) => {
   const [dragOver, setDragOver] = useState(false)
-
-  const { addFiles, removeFile, clearFilesToBeSent, filesToBeSent, isSending } =
-    useFileStore()
+  const { addFiles, removeFile, clearFilesToBeSent, filesToBeSent, isSending } = useFileStore()
+  const reducedMotion = useReducedMotion()
 
   const validateAndAddFiles = (files: FileList | File[]) => {
     const validFiles: File[] = []
     const currentCount = filesToBeSent.length
-
     if (currentCount >= MAX_FILES_TO_SEND_TOGETHER) {
       toast.error(`Maximum ${MAX_FILES_TO_SEND_TOGETHER} files allowed.`)
       return
     }
     if (currentCount + files.length > MAX_FILES_TO_SEND_TOGETHER) {
-      toast.error(
-        `You can only add ${MAX_FILES_TO_SEND_TOGETHER - currentCount} more file(s).`,
-      )
+      toast.error(`You can only add ${MAX_FILES_TO_SEND_TOGETHER - currentCount} more file(s).`)
       return
     }
-
     if (currentCount + files.length === 1) {
-      // there is only one file to be sent overall
       const file = files[0]
-
       if (file.size > MAX_FILE_SIZE_SINGLE_SEND * 1024 * 1024) {
-        toast.error(
-          `File ${file.name} exceeds ${MAX_FILE_SIZE_SINGLE_SEND}MB limit.`,
-        )
+        toast.error(`File ${file.name} exceeds ${MAX_FILE_SIZE_SINGLE_SEND}MB limit.`)
         return
       }
       validFiles.push(file)
     } else {
       Array.from(files).forEach((file) => {
         if (file.size > MAX_FILE_SIZE_MB_MULTIPLE_SEND * 1024 * 1024) {
-          toast.error(
-            `File ${file.name} exceeds ${MAX_FILE_SIZE_MB_MULTIPLE_SEND}MB limit and was skipped.`,
-          )
+          toast.error(`File ${file.name} exceeds ${MAX_FILE_SIZE_MB_MULTIPLE_SEND}MB limit and was skipped.`)
         }
         validFiles.push(file)
       })
     }
-
-    if (validFiles.length > 0) {
-      addFiles(validFiles)
-    }
+    if (validFiles.length > 0) addFiles(validFiles)
   }
 
-  // --- File Sending Logic ---
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      validateAndAddFiles(e.target.files)
-    }
-    // Reset input value to allow selecting the same file again if needed
-    e.target.value = ""
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files) validateAndAddFiles(event.target.files)
+    event.target.value = ""
   }
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault()
+  const handleDrop = (event: React.DragEvent) => {
+    event.preventDefault()
     setDragOver(false)
-
-    if (e.dataTransfer.files.length > 0) {
-      validateAndAddFiles(e.dataTransfer.files)
-    }
+    if (event.dataTransfer.files.length > 0) validateAndAddFiles(event.dataTransfer.files)
   }
+  const disabled = isSending || !isConnected
 
   return (
-    <div className="space-y-4">
-      <motion.div
-        className={`relative p-4 sm:p-8 border-2 border-dashed rounded-xl text-center transition-all duration-300 ${
-          dragOver
-            ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30"
-            : "border-slate-300 dark:border-slate-600 hover:border-blue-400 dark:hover:border-blue-500"
-        } ${!isConnected ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+    <section className="space-y-4" aria-label="Choose files to send">
+      <div
         onDrop={handleDrop}
-        onDragOver={(e) => {
-          e.preventDefault()
-          setDragOver(true)
-        }}
+        onDragOver={(event) => { event.preventDefault(); if (!disabled) setDragOver(true) }}
         onDragLeave={() => setDragOver(false)}
-        whileHover={isConnected ? { scale: 1.02 } : {}}
-        whileTap={isConnected ? { scale: 0.98 } : {}}
+        className={`relative rounded-xl border border-dashed px-4 py-7 text-center transition-colors sm:px-6 ${dragOver ? "border-primary bg-accent" : "border-input bg-muted/30 hover:border-primary/70"} ${disabled ? "cursor-not-allowed opacity-65" : ""}`}
       >
-        <input
-          type="file"
-          id="file-input"
-          className="hidden"
-          onChange={handleFileChange}
-          disabled={isSending || !isConnected}
-          multiple
-        />
-        <label
-          htmlFor="file-input"
-          className={`cursor-pointer ${isSending || !isConnected ? "cursor-not-allowed" : ""}`}
-        >
-          <motion.div
-            animate={dragOver ? { scale: 1.1 } : { scale: 1 }}
-            transition={{ duration: 0.2 }}
-          >
-            <FileUp className="mx-auto h-12 w-12 sm:h-16 sm:w-16 text-slate-400 dark:text-slate-500 mb-3 sm:mb-4" />
-          </motion.div>
-          <span className="block text-base sm:text-lg font-medium text-slate-900 dark:text-slate-100 mb-2">
-            Drop files here or click to select
-          </span>
-          <span className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-            Max {MAX_FILES_TO_SEND_TOGETHER} files,{" "}
-            {MAX_FILE_SIZE_MB_MULTIPLE_SEND}MB each
-          </span>
-        </label>
-      </motion.div>
+        <input type="file" id="file-input" className="peer absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed" onChange={handleFileChange} disabled={disabled} multiple aria-label="Choose files to send" />
+        <div className="pointer-events-none">
+          <span className="mx-auto grid size-11 place-items-center rounded-xl bg-background text-primary"><FileUp size={22} /></span>
+          <p className="mt-3 text-sm font-semibold">Drop files here or browse</p>
+          <p className="mt-1 text-sm text-muted-foreground">Up to {MAX_FILES_TO_SEND_TOGETHER} files · {MAX_FILE_SIZE_SINGLE_SEND} MB for one file · {MAX_FILE_SIZE_MB_MULTIPLE_SEND} MB each in a batch</p>
+          {!isConnected && <p className="mt-2 text-xs text-muted-foreground">Connect to a peer before choosing files.</p>}
+        </div>
+        <div className="pointer-events-none absolute inset-0 rounded-xl peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ring" />
+      </div>
 
-      <AnimatePresence>
+      <AnimatePresence initial={false}>
         {filesToBeSent.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="space-y-2"
-          >
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                Selected Files ({filesToBeSent.length}/
-                {MAX_FILES_TO_SEND_TOGETHER})
-              </span>
-              <button
-                onClick={clearFilesToBeSent}
-                className="text-xs text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 flex items-center gap-1 transition-colors"
-                disabled={isSending}
-              >
-                <Trash2 className="w-3 h-3" /> Clear All
-              </button>
+          <motion.div initial={reducedMotion ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 className="text-sm font-medium">Selected files <span className="text-muted-foreground">({filesToBeSent.length}/{MAX_FILES_TO_SEND_TOGETHER})</span></h3>
+              <Button variant="ghost" size="sm" className="min-h-11 text-destructive hover:text-destructive" onClick={clearFilesToBeSent} disabled={isSending}><Trash2 size={15} />Clear all</Button>
             </div>
-            <div className="grid gap-2 max-h-40 overflow-y-auto pr-2">
+            <ul className="max-h-52 space-y-2 overflow-y-auto" aria-label="Selected files">
               {filesToBeSent.map((file, index) => (
-                <motion.div
-                  key={`${file.name}-${index}`}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  className="flex items-center justify-between p-2 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700"
-                >
-                  <div className="flex items-center gap-2 overflow-hidden min-w-0">
-                    <FileIcon className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
-                    <span className="text-sm truncate min-w-0 text-slate-900 dark:text-slate-100">
-                      {file.name}
-                    </span>
-                    <span className="text-xs text-slate-500 dark:text-slate-400 shrink-0">
-                      ({(file.size / 1024 / 1024).toFixed(2)} MB)
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => removeFile(file.name)}
-                    disabled={isSending}
-                    className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition-colors"
-                  >
-                    <XCircle className="w-4 h-4 text-slate-500 hover:text-red-500 dark:text-slate-400 dark:hover:text-red-400" />
-                  </button>
-                </motion.div>
+                <li key={`${file.name}-${index}`} className="flex min-w-0 items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5">
+                  <FileIcon size={17} className="shrink-0 text-primary" />
+                  <span className="min-w-0 flex-1 truncate text-sm" title={file.name}>{file.name}</span>
+                  <span className="shrink-0 text-xs text-muted-foreground">{(file.size / 1024 / 1024).toFixed(2)} MB</span>
+                  <Button variant="ghost" size="icon" className="size-11 shrink-0" onClick={() => removeFile(file.name)} disabled={isSending} aria-label={`Remove ${file.name}`}><X size={16} /></Button>
+                </li>
               ))}
-            </div>
+            </ul>
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </section>
   )
 }
 

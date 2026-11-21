@@ -56,15 +56,6 @@ importers:
       '@fontsource-variable/figtree':
         specifier: ^5.2.10
         version: 5.2.10
-      '@fontsource/host-grotesk':
-        specifier: ^5.2.6
-        version: 5.2.8
-      '@fontsource/inter':
-        specifier: ^5.2.6
-        version: 5.2.8
-      '@fontsource/montserrat':
-        specifier: ^5.2.6
-        version: 5.2.8
       '@radix-ui/react-dialog':
         specifier: ^1.1.15
         version: 1.1.15(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -842,15 +833,6 @@ packages:
 
   '@fontsource-variable/figtree@5.2.10':
     resolution: {integrity: sha512-a5Gumbpy3mdd+Yg31g6Qb7CmjYbrfyutJa3bWfP5q8A4GclIOwX7mI+ZuSHsJnw/mHvW6r9oh1AHJcJTIxK4JA==}
-
-  '@fontsource/host-grotesk@5.2.8':
-    resolution: {integrity: sha512-bRSd8xBXXFbIU9oTIkecdcUjroUf0a7qtGM4J7oJeb86QXX2FiLt16H8n8PGc4SLsL/isRgm3N3ncPs3Vzz3ig==}
-
-  '@fontsource/inter@5.2.8':
-    resolution: {integrity: sha512-P6r5WnJoKiNVV+zvW2xM13gNdFhAEpQ9dQJHt3naLvfg+LkF2ldgSLiF4T41lf1SQCM9QmkqPTn4TH568IRagg==}
-
-  '@fontsource/montserrat@5.2.8':
-    resolution: {integrity: sha512-xTjLxSbSfCycDB0pwmNsfNvdfWPaDaRQ2LC6yt/ZI7SdvXG52zHnzNYC/09mzuAuWNJyShkteutfCoDgym56hQ==}
 
   '@humanfs/core@0.19.1':
     resolution: {integrity: sha512-5DyQ4+1JEUzejeK1JGICcideyfUbGixgS9jNgex5nqkW+cY7WZhxBigmieN5Qnw9ZosSNVC9KQKyb+GUaGyKUA==}
@@ -3690,12 +3672,6 @@ snapshots:
   '@floating-ui/utils@0.2.10': {}
 
   '@fontsource-variable/figtree@5.2.10': {}
-
-  '@fontsource/host-grotesk@5.2.8': {}
-
-  '@fontsource/inter@5.2.8': {}
-
-  '@fontsource/montserrat@5.2.8': {}
 
   '@humanfs/core@0.19.1': {}
 
