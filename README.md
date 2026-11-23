@@ -6,6 +6,7 @@ Window is a modern, secure, and ephemeral file-sharing application that enables 
 
 - **Peer-to-Peer Transfer:** Files are transferred directly between users using WebRTC Data Channels. No files are ever stored on the server.
 - **Room-Based Sharing:** Users join unique rooms via UUIDs to connect with peers.
+- **Pull-Based Offers:** Peers can offer files to the room or selected recipients for up to one hour. Files are served directly from the sender's active tab and are removed when revoked, expired, or the sender leaves.
 - **Ephemeral Identity:** User identities are temporary and session-based. Reloading the page maintains the session, but closing the tab clears the room state.
 - **Multi-Channel Architecture:** Large files and multiple files are distributed across multiple dynamically created data channels for efficient transfer.
 - **Secure & Private:** Direct P2P connection ensures data privacy. The signaling server only brokers the initial connection.
@@ -33,6 +34,10 @@ Window is a modern, secure, and ephemeral file-sharing application that enables 
 
 The Node.js server acts as a broker to help peers find each other. It does not touch the file data.
 
+Pull-based offers keep file contents in the sender's active browser session. The signaling server stores only temporary offer metadata and access rules; it does not receive file contents. Recipients can pull an offered file while the sender is online and before its expiry.
+
+For networks that block direct peer connections, configure a TURN service on the signaling server. Set `TURN_URLS` to a comma-separated list of TURN URLs (for example, `turn:turn.example.com:3478?transport=udp,turns:turn.example.com:5349?transport=tcp`) and `TURN_SHARED_SECRET` to the TURN provider's shared secret. The `/ice-servers` endpoint generates time-limited (one hour) REST credentials for clients. Without both settings, clients continue to use STUN only. The TURN service itself must be provisioned separately; relay traffic may incur provider costs.
+
 ```mermaid
 sequenceDiagram
     participant UserA
@@ -42,20 +47,20 @@ sequenceDiagram
     UserA->>Server: Join Room (ID: 123)
     UserB->>Server: Join Room (ID: 123)
     Server->>UserA: UserB Joined
-    
+
     UserA->>UserA: Create PeerConnection & DataChannel
     UserA->>Server: Send Offer (SDP)
     Server->>UserB: Forward Offer
-    
+
     UserB->>UserB: Set Remote Description & Create Answer
     UserB->>Server: Send Answer (SDP)
     Server->>UserA: Forward Answer
-    
+
     UserA->>UserA: Set Remote Desc
-    
+
     UserA->>UserB: ICE Candidates (via Server)
     UserB->>UserA: ICE Candidates (via Server)
-    
+
     Note over UserA, UserB: P2P Connection Established
 ```
 

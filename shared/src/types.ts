@@ -33,13 +33,125 @@ export type WebSocketMessage =
   | UserJoinedMessage
   | UserLeftMessage
   | ErrorMessage
-  | RoomFullMessage;
+  | RoomFullMessage
+  | PublishFileOfferMessage
+  | FileOfferSnapshotMessage
+  | FileOfferAddedMessage
+  | RevokeFileOfferMessage
+  | FileOfferRemovedMessage
+  | RequestFilePullMessage
+  | FilePullRequestMessage
+  | FilePullRejectedMessage
+  | FilePullDecisionMessage
+  | FinishFilePullMessage
+  | IdentityAcceptedMessage
+  | CancelFilePullMessage
+  | FilePullCancelledMessage
+  | FilePullFinishedMessage;
+
+// Pull-sharing offers contain metadata only. File bytes stay on peer data channels.
+export interface SharedFileOffer {
+  offerId: string;
+  roomId: string;
+  ownerId: string;
+  ownerName: string;
+  name: string;
+  type: string;
+  size: number;
+  createdAt: number;
+  expiresAt: number;
+  visibility: "room" | "selected";
+  recipientIds: string[];
+}
+
+export interface PublishFileOfferMessage {
+  type: "publish-file-offer";
+  roomId: string;
+  offer: SharedFileOffer;
+}
+export interface FileOfferSnapshotMessage {
+  type: "file-offer-snapshot";
+  offers: SharedFileOffer[];
+}
+export interface FileOfferAddedMessage {
+  type: "file-offer-added";
+  offer: SharedFileOffer;
+}
+export interface RevokeFileOfferMessage {
+  type: "revoke-file-offer";
+  offerId: string;
+}
+export interface FileOfferRemovedMessage {
+  type: "file-offer-removed";
+  offerId: string;
+  ownerId: string;
+  reason: "revoked" | "expired" | "owner-left";
+}
+export interface RequestFilePullMessage {
+  type: "request-file-pull";
+  offerId: string;
+  requestId: string;
+}
+export interface FilePullRequestMessage {
+  type: "file-pull-request";
+  offerId: string;
+  requestId: string;
+  requesterId: string;
+  requesterName: string;
+}
+export interface FilePullRejectedMessage {
+  type: "file-pull-rejected";
+  offerId: string;
+  requestId: string;
+  reason: string;
+}
+export interface FilePullDecisionMessage {
+  type: "file-pull-decision";
+  offerId: string;
+  requestId: string;
+  requesterId: string;
+  accepted: boolean;
+  reason?: string;
+}
+export interface FinishFilePullMessage {
+  type: "finish-file-pull";
+  offerId: string;
+  requestId: string;
+  bytes: number;
+  chunks: number;
+}
+
+export interface IdentityAcceptedMessage {
+  type: "identity-accepted";
+  userId: string;
+  identityToken: string;
+}
+export interface CancelFilePullMessage {
+  type: "cancel-file-pull";
+  offerId: string;
+  requestId: string;
+}
+export interface FilePullCancelledMessage {
+  type: "file-pull-cancelled";
+  offerId: string;
+  requestId: string;
+  requesterId: string;
+}
+export interface FilePullFinishedMessage {
+  type: "file-pull-finished";
+  offerId: string;
+  requestId: string;
+  requesterId: string;
+  bytes: number;
+  chunks: number;
+}
 
 export interface JoinRoomMessage {
   type: "join-room";
   roomId: string;
   userId: string;
   userName: string;
+  identityToken?: string;
 }
 
 export interface LeaveRoomMessage {

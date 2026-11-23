@@ -10,6 +10,7 @@
     "build:watch": "node esbuild.config.mjs --watch",
     "build:tsc": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
+    "test": "pnpm --filter @window/shared build && node --import tsx tests/*.test.ts",
     "start": "NODE_ENV=production node dist/index.js",
     "clean": "rm -rf dist"
   },

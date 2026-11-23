@@ -1,10 +1,27 @@
 import { useEffect, useRef } from "react"
 import { toast } from "sonner"
 import { motion, useReducedMotion } from "framer-motion"
-import { ArrowLeft, Check, Clock3, Copy, Link2, Send, Users, UserRound, Wifi, WifiOff } from "lucide-react"
+import {
+  ArrowLeft,
+  Check,
+  Clock3,
+  Copy,
+  Link2,
+  Send,
+  Users,
+  UserRound,
+  Wifi,
+  WifiOff,
+} from "lucide-react"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useUserStore } from "@/store"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { useFileStore } from "@/store/fileStore"
@@ -13,8 +30,18 @@ import { useSocket } from "@/store/hooks/socketHook"
 import FileUpload from "@/components/room/fileUpload"
 import ProgressSection from "@/components/room/progress"
 import { RemoteUsersPanel } from "@/components/room/remoteUsersPanel"
-import { Sidebar, SidebarContent, SidebarProvider } from "@/components/ui/sidebar"
-import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import { PullSharingPanel } from "@/components/room/pullSharingPanel"
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarProvider,
+} from "@/components/ui/sidebar"
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet"
 import { cn, isValidUUID } from "@/lib/utils"
 
 export const Route = createFileRoute("/room/$rId")({ component: Room })
@@ -22,24 +49,57 @@ export const Route = createFileRoute("/room/$rId")({ component: Room })
 export default function Room() {
   const { rId } = Route.useParams()
   const navigate = useNavigate()
-  const { userId, roomId, userName, remoteUsers, setUserId, setRoomId } = useUserStore()
-  const { filesToBeSent, receivedFileInfo, transferProgress, isSending, sendingFile } = useFileStore()
-  const { dataChannelMap, isConnected, status, createWSConnection, peerConnections, cleanUp, isRoomFull } = useSocket()
+  const { userId, roomId, userName, remoteUsers, setUserId, setRoomId } =
+    useUserStore()
+  const {
+    filesToBeSent,
+    receivedFileInfo,
+    transferProgress,
+    isSending,
+    sendingFile,
+  } = useFileStore()
+  const {
+    dataChannelMap,
+    isConnected,
+    status,
+    createWSConnection,
+    peerConnections,
+    cleanUp,
+    isRoomFull,
+    requestFilePull,
+    cancelFilePull,
+    publishFileOffer,
+    revokeFileOffer,
+  } = useSocket()
   const { sendFile } = useFile({ peerConnections, dataChannelMap })
   const cleanUpRef = useRef(cleanUp)
   const reducedMotion = useReducedMotion()
   const remoteUserCount = Object.keys(remoteUsers || {}).length
-  const isConnecting = status.includes("Connecting") || status.includes("Joining")
-  const isFailed = status.toLowerCase().includes("failed") || status.includes("Disconnected")
-  const connectionLabel = isConnected ? "Connected" : isFailed ? status : isConnecting ? status : status || "Waiting for a peer"
+  const isConnecting =
+    status.includes("Connecting") || status.includes("Joining")
+  const isFailed =
+    status.toLowerCase().includes("failed") || status.includes("Disconnected")
+  const connectionLabel = isConnected
+    ? "Connected"
+    : isFailed
+      ? status
+      : isConnecting
+        ? status
+        : status || "Waiting for a peer"
   const StatusIcon = isConnected ? Wifi : isFailed ? WifiOff : Clock3
-  const statusTone = isConnected ? "text-success bg-success/10" : isFailed ? "text-destructive bg-destructive/10" : "text-warning bg-warning/10"
+  const statusTone = isConnected
+    ? "text-success bg-success/10"
+    : isFailed
+      ? "text-destructive bg-destructive/10"
+      : "text-warning bg-warning/10"
 
   useEffect(() => {
     if (!isValidUUID(rId.trim())) {
       cleanUp()
       navigate({ to: "/" })
-      toast.error("Invalid Room ID Format", { description: "Please enter a valid UUID format room ID." })
+      toast.error("Invalid Room ID Format", {
+        description: "Please enter a valid UUID format room ID.",
+      })
       return
     }
     setRoomId(rId)
@@ -63,10 +123,15 @@ export default function Room() {
     }
   }, [roomId, userId])
 
-  useEffect(() => { cleanUpRef.current = cleanUp }, [cleanUp])
+  useEffect(() => {
+    cleanUpRef.current = cleanUp
+  }, [cleanUp])
 
   useEffect(() => {
-    const handleBeforeUnload = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = "" }
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault()
+      event.returnValue = ""
+    }
     const handlePageHide = () => cleanUpRef.current()
     window.addEventListener("beforeunload", handleBeforeUnload)
     window.addEventListener("pagehide", handlePageHide)
@@ -91,27 +156,48 @@ export default function Room() {
       const copied = document.execCommand("copy")
       input.remove()
       if (copied) toast.success(success)
-      else toast.error("Could not copy", { description: "Select and copy the room ID manually." })
+      else
+        toast.error("Could not copy", {
+          description: "Select and copy the room ID manually.",
+        })
     }
   }
 
   return (
     <SidebarProvider>
       <Sidebar side="left" className="room-sharing-sidebar hidden lg:flex">
-        <SidebarContent><RemoteUsersPanel remoteUsers={remoteUsers} /></SidebarContent>
+        <SidebarContent>
+          <RemoteUsersPanel remoteUsers={remoteUsers} />
+        </SidebarContent>
       </Sidebar>
       <main className="relative isolate min-h-svh w-full min-w-0 bg-background">
-        <div aria-hidden="true" className="room-dotted-background pointer-events-none absolute inset-0 z-0" />
+        <div
+          aria-hidden="true"
+          className="room-dotted-background pointer-events-none absolute inset-0 z-0"
+        />
         <header className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 py-4 sm:px-6 lg:px-8">
-          <Button variant="ghost" onClick={() => navigate({ to: "/" })} className="min-h-11 px-2 sm:px-3">
-            <ArrowLeft size={17} /><span>Home</span>
+          <Button
+            variant="ghost"
+            onClick={() => navigate({ to: "/" })}
+            className="min-h-11 px-2 sm:px-3"
+          >
+            <ArrowLeft size={17} />
+            <span>Home</span>
           </Button>
           <div className="flex items-center gap-2">
             <div className="lg:hidden">
               <Sheet>
                 <SheetTrigger asChild>
-                  <Button variant="outline" className="min-h-11 gap-2" aria-label={`Show ${remoteUserCount} connected peers`}>
-                    <Users size={17} /><span>Peers</span><span className="rounded-full bg-secondary px-2 py-0.5 text-xs">{remoteUserCount}</span>
+                  <Button
+                    variant="outline"
+                    className="min-h-11 gap-2"
+                    aria-label={`Show ${remoteUserCount} connected peers`}
+                  >
+                    <Users size={17} />
+                    <span>Peers</span>
+                    <span className="rounded-full bg-secondary px-2 py-0.5 text-xs">
+                      {remoteUserCount}
+                    </span>
                   </Button>
                 </SheetTrigger>
                 <SheetContent side="left" className="w-[min(22rem,90vw)] p-3">
@@ -125,51 +211,161 @@ export default function Room() {
         </header>
 
         <div className="relative z-10 mx-auto w-full max-w-6xl px-4 pb-10 sm:px-6 lg:px-8">
-          <motion.div initial={reducedMotion ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: reducedMotion ? 0 : 0.18 }} className="mx-auto w-full max-w-3xl">
-            <Card className="overflow-hidden rounded-2xl border-border shadow-sm">
-              <CardHeader className="gap-5 border-b border-border p-5 sm:p-7">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-muted-foreground">Sharing room</p>
-                    <CardTitle className="mt-1 text-2xl font-semibold tracking-tight sm:text-[1.75rem]">Your files, together</CardTitle>
-                    <CardDescription className="mt-2 flex min-w-0 items-center gap-2 text-sm">
-                      <span className={cn("inline-flex min-h-7 items-center gap-1.5 rounded-full px-2.5 font-medium", statusTone)} aria-live="polite">
-                        <StatusIcon size={15} aria-hidden="true" />{connectionLabel}
-                      </span>
-                      {userName && <span className="flex min-w-0 items-center gap-1.5 truncate"><UserRound size={14} /><span className="truncate">{userName}</span></span>}
-                    </CardDescription>
+          <motion.div
+            initial={reducedMotion ? false : { opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: reducedMotion ? 0 : 0.18 }}
+            className="mx-auto w-full max-w-6xl"
+          >
+            <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,0.9fr)]">
+              <Card className="overflow-hidden rounded-2xl border-border shadow-sm">
+                <CardHeader className="gap-5 border-b border-border p-5 sm:p-7">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Sharing room
+                      </p>
+                      <CardTitle className="mt-1 text-2xl font-semibold tracking-tight sm:text-[1.75rem]">
+                        Your files, together
+                      </CardTitle>
+                      <CardDescription className="mt-2 flex min-w-0 items-center gap-2 text-sm">
+                        <span
+                          className={cn(
+                            "inline-flex min-h-7 items-center gap-1.5 rounded-full px-2.5 font-medium",
+                            statusTone,
+                          )}
+                          aria-live="polite"
+                        >
+                          <StatusIcon size={15} aria-hidden="true" />
+                          {connectionLabel}
+                        </span>
+                        {userName && (
+                          <span className="flex min-w-0 items-center gap-1.5 truncate">
+                            <UserRound size={14} />
+                            <span className="truncate">{userName}</span>
+                          </span>
+                        )}
+                      </CardDescription>
+                    </div>
+                    <div className="flex shrink-0 flex-wrap gap-2">
+                      <Button
+                        variant="outline"
+                        className="min-h-11"
+                        onClick={() => copyText(rId, "Room ID copied")}
+                      >
+                        <Copy size={15} />
+                        Copy ID
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="min-h-11"
+                        onClick={() =>
+                          copyText(window.location.href, "Invite link copied")
+                        }
+                      >
+                        <Link2 size={15} />
+                        Copy invite
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        className="min-h-11 text-destructive hover:text-destructive"
+                        onClick={() => navigate({ to: "/" })}
+                      >
+                        Leave
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex shrink-0 flex-wrap gap-2">
-                    <Button variant="outline" className="min-h-11" onClick={() => copyText(rId, "Room ID copied")}><Copy size={15} />Copy ID</Button>
-                    <Button variant="outline" className="min-h-11" onClick={() => copyText(window.location.href, "Invite link copied")}><Link2 size={15} />Copy invite</Button>
-                    <Button variant="ghost" className="min-h-11 text-destructive hover:text-destructive" onClick={() => navigate({ to: "/" })}>Leave</Button>
+                  <div className="flex min-w-0 items-center gap-2 rounded-lg bg-muted/70 px-3 py-2.5">
+                    <span className="shrink-0 text-xs font-medium text-muted-foreground">
+                      Room ID
+                    </span>
+                    <code
+                      className="min-w-0 flex-1 truncate text-xs text-foreground sm:text-sm"
+                      title={rId}
+                    >
+                      {rId}
+                    </code>
+                    <span className="shrink-0 text-xs text-muted-foreground">
+                      {remoteUserCount}{" "}
+                      {remoteUserCount === 1 ? "peer" : "peers"}
+                    </span>
                   </div>
-                </div>
-                <div className="flex min-w-0 items-center gap-2 rounded-lg bg-muted/70 px-3 py-2.5">
-                  <span className="shrink-0 text-xs font-medium text-muted-foreground">Room ID</span>
-                  <code className="min-w-0 flex-1 truncate text-xs text-foreground sm:text-sm" title={rId}>{rId}</code>
-                  <span className="shrink-0 text-xs text-muted-foreground">{remoteUserCount} {remoteUserCount === 1 ? "peer" : "peers"}</span>
-                </div>
-              </CardHeader>
+                </CardHeader>
 
-              <CardContent className="space-y-5 p-5 sm:p-7">
-                <div>
-                  <h2 className="text-base font-semibold">Send files</h2>
-                  <p className="mt-1 text-sm leading-5 text-muted-foreground">Files are shared with everyone connected to this room.</p>
-                </div>
-                <FileUpload isConnected={isConnected} />
-                <Button onClick={sendFile} disabled={filesToBeSent.length === 0 || isSending || !isConnected} className="min-h-12 w-full rounded-lg text-base font-semibold">
-                  {isSending ? <><Clock3 size={18} className="animate-spin" />Sending files…</> : <><Send size={17} />Send {filesToBeSent.length ? `${filesToBeSent.length} ${filesToBeSent.length === 1 ? "file" : "files"}` : "files"}</>}
-                </Button>
-                {!isConnected && <p className="text-center text-sm text-muted-foreground">{isFailed ? "Connection ended. You can wait for a peer or leave and rejoin." : "Connect to a peer before selecting files to send."}</p>}
+                <CardContent className="space-y-5 p-5 sm:p-7">
+                  <div>
+                    <h2 className="text-base font-semibold">Send files</h2>
+                    <p className="mt-1 text-sm leading-5 text-muted-foreground">
+                      Files are shared with everyone connected to this room.
+                    </p>
+                  </div>
+                  <FileUpload isConnected={isConnected} />
+                  <Button
+                    onClick={sendFile}
+                    disabled={
+                      filesToBeSent.length === 0 || isSending || !isConnected
+                    }
+                    className="min-h-12 w-full rounded-lg text-base font-semibold"
+                  >
+                    {isSending ? (
+                      <>
+                        <Clock3 size={18} className="animate-spin" />
+                        Sending files…
+                      </>
+                    ) : (
+                      <>
+                        <Send size={17} />
+                        Send{" "}
+                        {filesToBeSent.length
+                          ? `${filesToBeSent.length} ${filesToBeSent.length === 1 ? "file" : "files"}`
+                          : "files"}
+                      </>
+                    )}
+                  </Button>
+                  {!isConnected && (
+                    <p className="text-center text-sm text-muted-foreground">
+                      {isFailed
+                        ? "Connection ended. You can wait for a peer or leave and rejoin."
+                        : "Connect to a peer before selecting files to send."}
+                    </p>
+                  )}
 
-                <ProgressSection isSending={isSending} transferProgress={transferProgress} file={sendingFile} receivedFileInfo={receivedFileInfo} />
-                <div className="flex items-start gap-2 rounded-lg border border-border bg-muted/40 p-3 text-sm leading-5 text-muted-foreground">
-                  {isConnected ? <Check size={16} className="mt-0.5 shrink-0 text-success" /> : <WifiOff size={16} className="mt-0.5 shrink-0" />}
-                  <p>{isConnected ? "Peer connection ready. File contents travel over the WebRTC connection; connection routing can depend on your network." : "Waiting for a peer connection. Some networks may need relay support before a transfer can start."}</p>
-                </div>
-              </CardContent>
-            </Card>
+                  <ProgressSection
+                    isSending={isSending}
+                    transferProgress={transferProgress}
+                    file={sendingFile}
+                    receivedFileInfo={receivedFileInfo}
+                  />
+                  <div className="flex items-start gap-2 rounded-lg border border-border bg-muted/40 p-3 text-sm leading-5 text-muted-foreground">
+                    {isConnected ? (
+                      <Check
+                        size={16}
+                        className="mt-0.5 shrink-0 text-success"
+                      />
+                    ) : (
+                      <WifiOff size={16} className="mt-0.5 shrink-0" />
+                    )}
+                    <p>
+                      {isConnected
+                        ? "Peer connection ready. File contents travel over the WebRTC connection; connection routing can depend on your network."
+                        : "Waiting for a peer connection. Some networks may need relay support before a transfer can start."}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+              {userId && userName && (
+                <PullSharingPanel
+                  roomId={rId}
+                  userId={userId}
+                  userName={userName}
+                  remoteUsers={remoteUsers}
+                  onPublish={publishFileOffer}
+                  onPull={requestFilePull}
+                  onCancel={cancelFilePull}
+                  onRevoke={revokeFileOffer}
+                />
+              )}
+            </div>
           </motion.div>
         </div>
       </main>

@@ -2,6 +2,11 @@ import { useFileStore } from "../fileStore"
 import { toast } from "sonner"
 import { CHUNK_SIZE, MAX_CHANNELS_FOR_DATA_TRANSMISSION } from "@/lib/constants"
 import { useRef } from "react"
+import { v4 as uuidv4 } from "uuid"
+import {
+  frameTransferChunk,
+  TRANSFER_CHUNK_HEADER_BYTES,
+} from "@/lib/transferProtocol"
 
 export const useFile = ({
   peerConnections,
@@ -180,77 +185,165 @@ export const useFile = ({
     totalGlobalSize: number,
   ): Promise<void> => {
     return new Promise((resolve, reject) => {
-      // 1. Send metadata (Delimiter)
+      const transferId = uuidv4()
+      const chunkPayloadSize = CHUNK_SIZE - TRANSFER_CHUNK_HEADER_BYTES
+      const expectedChunks = Math.ceil(file.size / chunkPayloadSize)
+      let chunkIndex = 0
+      let ackTimer: ReturnType<typeof setTimeout> | undefined
+      let bufferDrainTimer: ReturnType<typeof setTimeout> | undefined
+      let bufferDrainListener: (() => void) | undefined
+      let settled = false
+      const cleanup = () => {
+        if (ackTimer) clearTimeout(ackTimer)
+        if (bufferDrainTimer) clearTimeout(bufferDrainTimer)
+        if (bufferDrainListener)
+          channel.removeEventListener("bufferedamountlow", bufferDrainListener)
+        channel.removeEventListener("message", onAck)
+        channel.removeEventListener("close", onClose)
+      }
+      const fail = (error: unknown) => {
+        if (settled) return
+        settled = true
+        cleanup()
+        if (channel.readyState === "open") {
+          try {
+            channel.send(
+              JSON.stringify({
+                protocol: "window-push-v1",
+                kind: "abort",
+                transferId,
+              }),
+            )
+          } catch {
+            /* channel is already closing */
+          }
+        }
+        reject(error)
+      }
+      const onAck = (event: MessageEvent) => {
+        if (typeof event.data !== "string") return
+        try {
+          const message = JSON.parse(event.data)
+          if (
+            message.protocol !== "window-push-v1" ||
+            message.kind !== "received" ||
+            message.transferId !== transferId
+          )
+            return
+          if (
+            message.bytes !== file.size ||
+            message.chunks !== expectedChunks
+          ) {
+            fail(
+              new Error(
+                "Receiver completion confirmation did not match the file",
+              ),
+            )
+            return
+          }
+          if (settled) return
+          settled = true
+          cleanup()
+          resolve()
+        } catch {
+          /* unrelated channel control message */
+        }
+      }
+      const onClose = () =>
+        fail(new Error("Channel closed before download confirmation"))
+
+      channel.addEventListener("message", onAck)
+      channel.addEventListener("close", onClose)
       const metadata = JSON.stringify({
+        protocol: "window-push-v1",
+        kind: "start",
+        transferId,
         name: file.name,
         type: file.type,
         size: file.size,
+        chunks: expectedChunks,
       })
 
       try {
         channel.send(metadata)
       } catch (error) {
-        return reject(error)
+        fail(error)
+        return
       }
 
       // 2. Send chunks
       const fileReader = new FileReader()
       let offset = 0
 
-      fileReader.onerror = (err) => reject(err)
+      fileReader.onerror = (err) => fail(err)
 
       const readNextSlice = () => {
         if (offset < file.size) {
-          const slice = file.slice(offset, offset + CHUNK_SIZE)
+          const slice = file.slice(offset, offset + chunkPayloadSize)
           fileReader.readAsArrayBuffer(slice)
         } else {
-          resolve()
+          ackTimer = setTimeout(
+            () => fail(new Error("Receiver did not confirm the download")),
+            120_000,
+          )
         }
       }
 
       fileReader.onload = (e) => {
         if (!e.target?.result) {
-          return reject(new Error("FileReader result is null"))
+          return fail(new Error("FileReader result is null"))
         }
 
         const chunk = e.target.result as ArrayBuffer
         const chunkSize = chunk.byteLength
 
         try {
-          const sendChunk = () => {
-            if (channel.readyState !== "open") {
-              reject(new Error("Channel closed"))
-              return
-            }
-
-            // Basic backpressure handling
-            if (channel.bufferedAmount > 10 * 1024 * 1024) {
-              // 10MB buffer
-              // Wait for buffer to drain
-              const onBufferedAmountLow = () => {
-                channel.removeEventListener(
-                  "bufferedamountlow",
-                  onBufferedAmountLow,
-                )
-                sendChunk()
+          const sendChunk = async () => {
+            try {
+              if (channel.readyState !== "open") {
+                fail(new Error("Channel closed"))
+                return
               }
-              channel.addEventListener("bufferedamountlow", onBufferedAmountLow)
-              return
+
+              // Basic backpressure handling
+              if (channel.bufferedAmount > 10 * 1024 * 1024) {
+                if (bufferDrainListener)
+                  channel.removeEventListener("bufferedamountlow", bufferDrainListener)
+                bufferDrainListener = () => {
+                  if (bufferDrainTimer) clearTimeout(bufferDrainTimer)
+                  bufferDrainTimer = undefined
+                  channel.removeEventListener("bufferedamountlow", bufferDrainListener!)
+                  bufferDrainListener = undefined
+                  void sendChunk()
+                }
+                channel.addEventListener("bufferedamountlow", bufferDrainListener, { once: true })
+                bufferDrainTimer = setTimeout(
+                  () => fail(new Error("Transfer stalled while waiting for network buffer")),
+                  30_000,
+                )
+                return
+              }
+
+              const frame = await frameTransferChunk(chunkIndex, chunk)
+              channel.send(frame)
+              chunkIndex += 1
+              offset += chunkSize
+              globalTransferredRef.current += chunkSize
+              setTransferProgress(
+                totalGlobalSize === 0
+                  ? 100
+                  : (globalTransferredRef.current / totalGlobalSize) * 100,
+              )
+
+              readNextSlice()
+            } catch (error) {
+              fail(error)
             }
-
-            channel.send(chunk)
-            offset += chunkSize
-            globalTransferredRef.current += chunkSize
-            setTransferProgress(
-              (globalTransferredRef.current / totalGlobalSize) * 100,
-            )
-
-            readNextSlice()
           }
 
-          sendChunk()
+          void sendChunk()
         } catch (error) {
-          reject(error)
+          fail(error)
         }
       }
 
