@@ -35,7 +35,7 @@ const FileUpload = ({ isConnected }: FileUploadProps) => {
   const handleDrop = (event: React.DragEvent) => {
     event.preventDefault()
     setDragOver(false)
-    if (event.dataTransfer.files.length > 0)
+    if (!disabled && event.dataTransfer.files.length > 0)
       validateAndAddFiles(event.dataTransfer.files)
   }
   const disabled = isSending || !isConnected
@@ -49,6 +49,7 @@ const FileUpload = ({ isConnected }: FileUploadProps) => {
           if (!disabled) setDragOver(true)
         }}
         onDragLeave={() => setDragOver(false)}
+        aria-disabled={disabled}
         className={`relative rounded-xl border border-dashed px-4 py-7 text-center transition-colors sm:px-6 ${dragOver ? "border-primary bg-accent" : "border-input bg-muted/30 hover:border-primary/70"} ${disabled ? "cursor-not-allowed opacity-65" : ""}`}
       >
         <input

@@ -54,6 +54,8 @@ export function PullSharingPanel({
   const [duration, setDuration] = useState(10)
   const [now, setNow] = useState(Date.now())
   const peers = Object.entries(remoteUsers)
+  const connectedPeerIds = new Set(peers.map(([id]) => id))
+  const activeRecipients = recipients.filter((id) => connectedPeerIds.has(id))
   const visibleOffers = useMemo(
     () =>
       offers.filter(
@@ -88,7 +90,10 @@ export function PullSharingPanel({
       setFileError("Your active offers cannot exceed 200 MB total.")
       return
     }
-    if (visibility === "selected" && recipients.length === 0) return
+    if (visibility === "selected" && activeRecipients.length === 0) {
+      setFileError("Choose at least one connected peer to share with.")
+      return
+    }
     const createdAt = Date.now()
     for (const file of selectedFiles) {
       const offer: SharedFileOffer = {
@@ -102,7 +107,7 @@ export function PullSharingPanel({
         createdAt,
         expiresAt: createdAt + duration * 60 * 1000,
         visibility,
-        recipientIds: visibility === "selected" ? recipients : [],
+        recipientIds: visibility === "selected" ? activeRecipients : [],
       }
       onPublish(offer, file)
     }
@@ -337,7 +342,7 @@ export function PullSharingPanel({
             disabled={
               !selectedFiles.length ||
               exceedsRoomQuota ||
-              (visibility === "selected" && recipients.length === 0)
+              (visibility === "selected" && activeRecipients.length === 0)
             }
             className="min-h-11 w-full"
           >

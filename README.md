@@ -105,6 +105,10 @@ pnpm dev
 # Client runs on http://localhost:3000
 ```
 
+### Connecting a second device on your Wi-Fi
+
+For the LAN setup, host the UI and signaling server on the development machine and open the UI from the other device using the host machine's LAN IP. The current manual setup and an optional mDNS-based discovery design are described in the [Local Development Guide](docs/local-development.md).
+
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
