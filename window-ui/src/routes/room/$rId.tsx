@@ -44,7 +44,15 @@ import {
 } from "@/components/ui/sheet"
 import { cn, isValidUUID } from "@/lib/utils"
 
-export const Route = createFileRoute("/room/$rId")({ component: Room })
+export const Route = createFileRoute("/room/$rId")({
+  component: Room,
+  head: () => ({
+    meta: [
+      { name: "robots", content: "noindex, nofollow" },
+      { title: "Private sharing room — Window" },
+    ],
+  }),
+})
 
 export default function Room() {
   const { rId } = Route.useParams()
