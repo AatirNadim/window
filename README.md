@@ -68,7 +68,7 @@ sequenceDiagram
     S-->>B: Transfer can start
     A->>B: Send file chunks over WebRTC
     B-->>A: Confirm completion
-    Note over A,S: Owner must stay online; offer expires or can be revoked
+    Note over A,S: Owner must stay online - offer expires or can be revoked
     Note over S: File bytes do not pass through the server
 ```
 
