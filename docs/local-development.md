@@ -1,6 +1,11 @@
 # Local Development on a Wi-Fi Network
 
-This guide explains how to run Window on one development machine and connect a second device on the same Wi-Fi network. The signaling server and UI remain local to the development machine; file data still travels over WebRTC between peers.
+This guide explains how to run Window on one development machine and connect a second device on the same Wi-Fi network. The signaling server and UI remain local to the development machine; file data still travels over WebRTC between peers. Install dependencies and build the shared package from the repository root before starting either service:
+
+```bash
+pnpm install
+pnpm build:shared
+```
 
 ## Method 1: Share the development machine's LAN address
 
@@ -27,16 +32,12 @@ Replace `192.168.1.20` with the development machine's LAN IP. `VITE_SERVER_PATH`
 In one terminal:
 
 ```bash
-cd server
-pnpm install
-pnpm dev
+pnpm dev:server
 ```
 
-The signaling server listens on port `8080`. In another terminal:
+The signaling server listens on port `8080` by default. In another terminal, from `window-ui`:
 
 ```bash
-cd window-ui
-pnpm install
 pnpm dev -- --host 0.0.0.0
 ```
 
@@ -55,7 +56,7 @@ Use the same LAN IP in both the URL and `VITE_SERVER_PATH`. Each device opens th
 - If the page loads but signaling does not connect, check the `VITE_SERVER_PATH` value and firewall access to port `8080`.
 - WebRTC data channels connect peer-to-peer independently of the signaling connection. Some networks also restrict that direct path; configure a TURN service if required (see the root README's TURN section).
 
-The router already learns local address information as devices join the network. No router-table change is needed. Sharing the LAN IP is how the second device learns which machine to contact.
+Share the development machine's LAN IP with the second device so it knows which machine to contact. This does not change the router's routing table.
 
 ## Method 2: Discover a local proxy with mDNS
 

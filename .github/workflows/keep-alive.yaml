@@ -1,0 +1,29 @@
+name: Render Keep-Alive Ping
+
+on:
+  schedule:
+    # Runs every 12 minutes
+    - cron: "*/12 * * * *"
+  # Allow manual trigger from GitHub Actions tab
+  workflow_dispatch:
+
+jobs:
+  ping-health:
+    name: Ping Health Endpoint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Make Script Executable
+        run: chmod +x ./scripts/keep-alive.sh
+
+      - name: Run Keep-Alive Ping
+        run: |
+          ./scripts/keep-alive.sh
+        env:
+          TARGET_URL: "https://window-kq5v.onrender.com/health"
+          MAX_RETRIES: 3
+          CONNECT_TIMEOUT: 20
+          MAX_TIME: 90
+          INITIAL_BACKOFF: 10
