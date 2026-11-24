@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from "uuid"
 
 interface UserState {
   userId: string | null
+  identityToken: string | null
   userName: string | null
 
   roomId: string | null
@@ -13,6 +14,7 @@ interface UserState {
 
 interface UserAction {
   setUserId: () => void
+  setIdentityToken: (token: string) => void
   initializeUser: () => void
   joinRoom: (roomId: string) => void
   leaveRoom: () => void
@@ -70,14 +72,17 @@ export const useUserStore = create<UserState & UserAction>()(
   persist(
     (set, get) => ({
       userId: null,
+      identityToken: null,
       userName: null,
       currentRoomId: null,
       remoteUsers: {},
       roomId: null,
 
       setUserId: () => {
-        set({ userId: uuidv4() })
+        set({ userId: uuidv4(), identityToken: null })
       },
+
+      setIdentityToken: (identityToken) => set({ identityToken }),
 
       initializeUser: () => {
         const state = get()
@@ -88,6 +93,7 @@ export const useUserStore = create<UserState & UserAction>()(
 
           set({
             userId: uuidv4(),
+            identityToken: null,
             userName: generateRandomUsername(),
           })
         }
@@ -100,6 +106,7 @@ export const useUserStore = create<UserState & UserAction>()(
         if (!state.userId || !state.userName) {
           set({
             userId: uuidv4(),
+            identityToken: null,
             userName: generateRandomUsername(),
           })
         }
@@ -108,6 +115,7 @@ export const useUserStore = create<UserState & UserAction>()(
       leaveRoom: () => {
         set({
           userId: null,
+          identityToken: null,
           roomId: null,
           remoteUsers: {},
         })
@@ -116,6 +124,7 @@ export const useUserStore = create<UserState & UserAction>()(
       clearUser: () => {
         set({
           userId: null,
+          identityToken: null,
           userName: null,
         })
       },
@@ -148,10 +157,12 @@ export const useUserStore = create<UserState & UserAction>()(
     }),
     {
       name: "window-user-storage",
-      // persist the username, userId and roomId only
+      // Persist the anonymous identity proof only within this browser tab session.
       storage: createJSONStorage(() => sessionStorage),
       partialize: (state) => ({
+        userId: state.userId,
         userName: state.userName,
+        identityToken: state.identityToken,
       }),
     },
   ),

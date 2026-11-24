@@ -3,6 +3,7 @@ import { createServer } from "http";
 import { SocketService } from "./utils/socket";
 import { ExtendedWebSocket } from "./utils/constants";
 import { WebSocketMessage } from "@window/shared";
+import { createHmac } from "node:crypto";
 
 const PORT = Number(process.env.PORT) || 8080;
 
@@ -10,10 +11,48 @@ const socketService = new SocketService();
 
 // Create HTTP server for health endpoint
 const server = createServer((req, res) => {
+  if (req.method === "GET" && req.url === "/ice-servers") {
+    const turnUrls =
+      process.env.TURN_URLS?.split(",")
+        .map((url) => url.trim())
+        .filter(Boolean) ?? [];
+    const turnSecret = process.env.TURN_SHARED_SECRET;
+    const iceServers: Array<{
+      urls: string[];
+      username?: string;
+      credential?: string;
+    }> = [
+      {
+        urls: [
+          "stun:stun.l.google.com:19302",
+          "stun:stun1.l.google.com:19302",
+          "stun:stun2.l.google.com:19302",
+        ],
+      },
+    ];
+
+    if (turnUrls.length && turnSecret) {
+      const expiresAt = Math.floor(Date.now() / 1000) + 60 * 60;
+      const username = `${expiresAt}:window`;
+      const credential = createHmac("sha1", turnSecret)
+        .update(username)
+        .digest("base64");
+      iceServers.push({ urls: turnUrls, username, credential });
+    }
+
+    res.writeHead(200, {
+      "Content-Type": "application/json",
+      "Cache-Control": "no-store",
+      "Access-Control-Allow-Origin": "*",
+    });
+    res.end(JSON.stringify({ iceServers }));
+    return;
+  }
+
   if (req.method === "GET" && req.url === "/health") {
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(
-      JSON.stringify({ status: "ok", timestamp: new Date().toISOString() })
+      JSON.stringify({ status: "ok", timestamp: new Date().toISOString() }),
     );
   } else {
     res.writeHead(404);
@@ -22,7 +61,7 @@ const server = createServer((req, res) => {
 });
 
 // Attach WebSocket server to the HTTP server
-const wss = new WebSocketServer({ server });
+const wss = new WebSocketServer({ server, maxPayload: 64 * 1024 });
 
 server.listen(PORT, () => {
   console.log(`Signaling server running on port ${PORT}`);
@@ -33,10 +72,10 @@ const registerWSEventHandlers = (ws: ExtendedWebSocket) => {
   try {
     // @ts-expect-error
     ws.on("message", (data) => {
-      console.debug("Received message");
       try {
+        if (data.toString().length > 64 * 1024)
+          throw new Error("Message exceeds 64 KB limit");
         const message = JSON.parse(data.toString());
-        console.info("Parsed message:", message);
         socketService.handleMessage(ws, message as WebSocketMessage);
       } catch (error) {
         console.error("Error parsing message:", error);
@@ -46,6 +85,7 @@ const registerWSEventHandlers = (ws: ExtendedWebSocket) => {
     // @ts-expect-error
     ws.on("close", () => {
       console.log("Client disconnected");
+      socketService.cleanupSocket(ws);
     });
 
     // @ts-expect-error
