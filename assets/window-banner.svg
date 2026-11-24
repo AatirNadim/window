@@ -16,10 +16,15 @@
   <circle cx="1095" cy="82" r="13" fill="#E8A9B9"/>
   <circle cx="929" cy="235" r="8" fill="#5B91A3"/>
   <rect x="72" y="66" width="42" height="42" rx="14" fill="#2F4A63"/>
-  <circle cx="93" cy="87" r="9" stroke="#fff" stroke-width="2"/>
-  <circle cx="93" cy="87" r="2" fill="#fff"/>
+  <g transform="translate(81, 75)" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M16.247 7.761a6 6 0 0 1 0 8.478"/>
+    <path d="M19.075 4.933a10 10 0 0 1 0 14.134"/>
+    <path d="M4.925 19.067a10 10 0 0 1 0-14.134"/>
+    <path d="M7.753 16.239a6 6 0 0 1 0-8.478"/>
+    <circle cx="12" cy="12" r="2"/>
+  </g>
   <text x="132" y="105" fill="#131B2B" font-family="Figtree Variable, sans-serif" font-size="54" font-weight="700" letter-spacing="-2.5">win<tspan fill="#2F4A63">dow</tspan></text>
-  <rect x="72" y="124" width="44" height="5" rx="2.5" fill="#E8A9B9"/>
+  <rect x="132" y="114" width="40" height="4" rx="2" fill="#E8A9B9"/>
   <text x="72" y="184" fill="#2F4A63" font-family="Figtree Variable, sans-serif" font-size="18" font-weight="700" letter-spacing="2.2">REAL-TIME PEER-TO-PEER FILE SHARING</text>
   <text x="72" y="226" fill="#131B2B" font-family="Figtree Variable, sans-serif" font-size="25" font-weight="500">A room for the files you want to share.</text>
   <text x="72" y="261" fill="#2F4A63" fill-opacity=".82" font-family="Figtree Variable, sans-serif" font-size="17">Direct browser-to-browser transfers, with no account required.</text>
