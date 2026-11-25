@@ -10,6 +10,7 @@ import { File as FileIcon, FileUp, Trash2, X } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
+import { Kbd } from "@/components/keybindings/Kbd"
 
 type FileUploadProps = { isConnected: boolean }
 
@@ -65,8 +66,9 @@ const FileUpload = ({ isConnected }: FileUploadProps) => {
           <span className="mx-auto grid size-11 place-items-center rounded-xl bg-background text-primary">
             <FileUp size={22} />
           </span>
-          <p className="mt-3 text-sm font-semibold">
-            Drop files here or browse
+          <p className="mt-3 text-sm font-semibold flex items-center justify-center gap-1.5 flex-wrap">
+            <span>Drop files here or browse</span>
+            <Kbd className="text-[10px] h-5 min-w-5">U</Kbd>
           </p>
           <p className="mt-1 text-sm text-muted-foreground">
             Up to {MAX_FILES_TO_SEND_TOGETHER} files ·{" "}
@@ -100,12 +102,13 @@ const FileUpload = ({ isConnected }: FileUploadProps) => {
               <Button
                 variant="ghost"
                 size="sm"
-                className="min-h-11 text-destructive hover:text-destructive"
+                className="min-h-11 text-destructive hover:text-destructive gap-1.5"
                 onClick={clearFilesToBeSent}
                 disabled={isSending}
               >
                 <Trash2 size={15} />
-                Clear all
+                <span>Clear all</span>
+                <Kbd className="text-[10px] h-4.5 min-w-4.5">X</Kbd>
               </Button>
             </div>
             <ul

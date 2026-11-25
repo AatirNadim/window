@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 import { motion, useReducedMotion } from "framer-motion"
 import {
@@ -24,9 +24,13 @@ import {
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { KeyboardShortcutsButton } from "@/components/keybindings/KeyboardShortcutsButton"
+import { Kbd } from "@/components/keybindings/Kbd"
+import { useTheme } from "@/components/theme-provider"
 import { useFileStore } from "@/store/fileStore"
 import { useFile } from "@/store/hooks/fileHook"
 import { useSocket } from "@/store/hooks/socketHook"
+import { useKeybindings } from "@/hooks/useKeybindings"
 import FileUpload from "@/components/room/fileUpload"
 import ProgressSection from "@/components/room/progress"
 import { RemoteUsersPanel } from "@/components/room/remoteUsersPanel"
@@ -59,12 +63,15 @@ export default function Room() {
   const navigate = useNavigate()
   const { userId, roomId, userName, remoteUsers, setUserId, setRoomId } =
     useUserStore()
+  const { theme, setTheme } = useTheme()
+  const [peersSheetOpen, setPeersSheetOpen] = useState(false)
   const {
     filesToBeSent,
     receivedFileInfo,
     transferProgress,
     isSending,
     sendingFile,
+    clearFilesToBeSent,
   } = useFileStore()
   const {
     dataChannelMap,
@@ -171,6 +178,92 @@ export default function Room() {
     }
   }
 
+  const handleOpenFileInput = () => {
+    const fileInput = document.getElementById("file-input") as HTMLInputElement | null
+    if (fileInput && !isSending && isConnected) {
+      fileInput.click()
+    } else if (!isConnected) {
+      toast.info("Waiting for a peer", {
+        description: "Connect to a peer before selecting files to send.",
+      })
+    }
+  }
+
+  const handleOpenOfferInput = () => {
+    const offerInput = document.getElementById("offer-file-input") as HTMLInputElement | null
+    if (offerInput) {
+      offerInput.click()
+    }
+  }
+
+  // Register Room screen keybindings
+  useKeybindings([
+    {
+      keys: ["u", "f", "Alt+U"],
+      handler: handleOpenFileInput,
+      allowInInput: false,
+    },
+    {
+      keys: ["s", "Alt+S"],
+      handler: () => {
+        if (filesToBeSent.length > 0 && !isSending && isConnected) {
+          sendFile()
+        } else if (!isConnected) {
+          toast.info("Waiting for peer connection", {
+            description: "A peer connection must be established before sending files.",
+          })
+        } else if (filesToBeSent.length === 0) {
+          toast.info("No files selected", {
+            description: "Press 'U' to select files first.",
+          })
+        }
+      },
+      allowInInput: false,
+    },
+    {
+      keys: ["x", "Alt+X"],
+      handler: () => {
+        if (filesToBeSent.length > 0 && !isSending) {
+          clearFilesToBeSent()
+          toast.info("Cleared selected files")
+        }
+      },
+      allowInInput: false,
+    },
+    {
+      keys: ["r", "Alt+R"],
+      handler: () => copyText(rId, "Room ID copied"),
+      allowInInput: false,
+    },
+    {
+      keys: ["i", "Alt+I"],
+      handler: () => copyText(window.location.href, "Invite link copied"),
+      allowInInput: false,
+    },
+    {
+      keys: ["p", "Alt+P"],
+      handler: () => {
+        setPeersSheetOpen((prev) => !prev)
+      },
+      allowInInput: false,
+    },
+    {
+      keys: ["o", "Alt+O"],
+      handler: handleOpenOfferInput,
+      allowInInput: false,
+    },
+    {
+      keys: ["l", "h", "Alt+L", "Alt+H"],
+      handler: () => navigate({ to: "/" }),
+      allowInInput: false,
+    },
+    {
+      keys: ["t", "Alt+T"],
+      handler: () => setTheme(theme === "light" ? "dark" : "light"),
+      allowInInput: false,
+    },
+  ])
+
   return (
     <SidebarProvider>
       <Sidebar side="left" className="room-sharing-sidebar hidden lg:flex">
@@ -187,14 +280,15 @@ export default function Room() {
           <Button
             variant="ghost"
             onClick={() => navigate({ to: "/" })}
-            className="min-h-11 px-2 sm:px-3"
+            className="min-h-11 px-2 sm:px-3 gap-1.5"
           >
             <ArrowLeft size={17} />
             <span>Home</span>
+            <Kbd className="hidden sm:inline-flex text-[10px] h-5 min-w-5">H</Kbd>
           </Button>
           <div className="flex items-center gap-2">
             <div className="lg:hidden">
-              <Sheet>
+              <Sheet open={peersSheetOpen} onOpenChange={setPeersSheetOpen}>
                 <SheetTrigger asChild>
                   <Button
                     variant="outline"
@@ -206,6 +300,7 @@ export default function Room() {
                     <span className="rounded-full bg-secondary px-2 py-0.5 text-xs">
                       {remoteUserCount}
                     </span>
+                    <Kbd className="text-[10px] h-5 min-w-5">P</Kbd>
                   </Button>
                 </SheetTrigger>
                 <SheetContent side="left" className="w-[min(22rem,90vw)] p-3">
@@ -214,6 +309,7 @@ export default function Room() {
                 </SheetContent>
               </Sheet>
             </div>
+            <KeyboardShortcutsButton />
             <ThemeToggle />
           </div>
         </header>
@@ -258,28 +354,31 @@ export default function Room() {
                     <div className="flex shrink-0 flex-wrap gap-2">
                       <Button
                         variant="outline"
-                        className="min-h-11"
+                        className="min-h-11 gap-1.5"
                         onClick={() => copyText(rId, "Room ID copied")}
                       >
                         <Copy size={15} />
-                        Copy ID
+                        <span>Copy ID</span>
+                        <Kbd className="hidden md:inline-flex text-[10px] h-5 min-w-5">R</Kbd>
                       </Button>
                       <Button
                         variant="outline"
-                        className="min-h-11"
+                        className="min-h-11 gap-1.5"
                         onClick={() =>
                           copyText(window.location.href, "Invite link copied")
                         }
                       >
                         <Link2 size={15} />
-                        Copy invite
+                        <span>Copy invite</span>
+                        <Kbd className="hidden md:inline-flex text-[10px] h-5 min-w-5">I</Kbd>
                       </Button>
                       <Button
                         variant="ghost"
-                        className="min-h-11 text-destructive hover:text-destructive"
+                        className="min-h-11 text-destructive hover:text-destructive gap-1.5"
                         onClick={() => navigate({ to: "/" })}
                       >
-                        Leave
+                        <span>Leave</span>
+                        <Kbd className="hidden md:inline-flex text-[10px] h-5 min-w-5">L</Kbd>
                       </Button>
                     </div>
                   </div>
@@ -313,20 +412,25 @@ export default function Room() {
                     disabled={
                       filesToBeSent.length === 0 || isSending || !isConnected
                     }
-                    className="min-h-12 w-full rounded-lg text-base font-semibold"
+                    className="min-h-12 w-full justify-center gap-2 rounded-lg text-base font-semibold"
                   >
                     {isSending ? (
                       <>
                         <Clock3 size={18} className="animate-spin" />
-                        Sending files…
+                        <span>Sending files…</span>
                       </>
                     ) : (
                       <>
                         <Send size={17} />
-                        Send{" "}
-                        {filesToBeSent.length
-                          ? `${filesToBeSent.length} ${filesToBeSent.length === 1 ? "file" : "files"}`
-                          : "files"}
+                        <span>
+                          Send{" "}
+                          {filesToBeSent.length
+                            ? `${filesToBeSent.length} ${filesToBeSent.length === 1 ? "file" : "files"}`
+                            : "files"}
+                        </span>
+                        <Kbd className="ml-1 text-[10px] h-5 min-w-5 bg-primary-foreground/20 text-primary-foreground border-primary-foreground/30">
+                          S
+                        </Kbd>
                       </>
                     )}
                   </Button>

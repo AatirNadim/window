@@ -19,6 +19,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { usePullStore } from "@/store/pullStore"
+import { Kbd } from "@/components/keybindings/Kbd"
 
 interface Props {
   roomId: string
@@ -229,8 +230,10 @@ export function PullSharingPanel({
           </div>
           <label className="flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-input bg-muted/20 px-3 text-sm hover:border-primary/70">
             <Plus size={16} />
-            Choose up to 5 files (50 MB each, 200 MB active total)
+            <span>Choose up to 5 files (50 MB each, 200 MB active total)</span>
+            <Kbd className="text-[10px] h-5 min-w-5">O</Kbd>
             <input
+              id="offer-file-input"
               type="file"
               multiple
               className="sr-only"
