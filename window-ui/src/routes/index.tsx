@@ -2,14 +2,19 @@ import { useRef } from "react"
 import { v4 as uuidv4 } from "uuid"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { toast } from "sonner"
-import { ThemeToggle } from "@/components/theme-toggle"
-import { KeyboardShortcutsButton } from "@/components/keybindings/KeyboardShortcutsButton"
 import { useUserStore } from "@/store"
 import { useTheme } from "@/components/theme-provider"
 import { useKeybindings } from "@/hooks/useKeybindings"
 import { isValidUUID } from "@/lib/utils"
 import HeroSection from "@/components/home/heroSection"
 import InfiniteWindowBackground from "@/components/home/infiniteWindowBackground"
+import LandingNavbar from "@/components/landing/landingNavbar"
+import InteractiveDemo from "@/components/landing/interactiveDemo"
+import ModesComparison from "@/components/landing/modesComparison"
+import SecurityArchitecture from "@/components/landing/securityArchitecture"
+import LimitsMatrix from "@/components/landing/limitsMatrix"
+import FAQSection from "@/components/landing/faqSection"
+import LandingFooter from "@/components/landing/landingFooter"
 
 export const Route = createFileRoute("/")({
   component: Home,
@@ -101,10 +106,7 @@ export default function Home() {
   return (
     <div className="relative isolate min-h-svh bg-background">
       <InfiniteWindowBackground />
-      <header className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-end gap-2 px-4 pt-4 sm:px-6 lg:px-8">
-        <KeyboardShortcutsButton />
-        <ThemeToggle />
-      </header>
+      <LandingNavbar />
       <div className="relative z-10 px-4 sm:px-6 lg:px-8">
         <HeroSection
           roomId={roomId}
@@ -113,6 +115,14 @@ export default function Home() {
           handleJoinRoom={handleJoinRoom}
           inputRef={roomInputRef}
         />
+      </div>
+      <div className="relative z-10">
+        <InteractiveDemo />
+        <ModesComparison />
+        <SecurityArchitecture />
+        <LimitsMatrix />
+        <FAQSection />
+        <LandingFooter handleCreateRoom={handleCreateRoom} />
       </div>
     </div>
   )

@@ -106,7 +106,7 @@ export default function HeroSection({
               Create or join a room
             </CardTitle>
             <CardDescription className="text-sm leading-6">
-              A room connects up to two people for a private file exchange.
+              A room connects up to 6 peers for a private, direct file exchange.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6 px-6 pb-6 sm:px-8 sm:pb-8">
