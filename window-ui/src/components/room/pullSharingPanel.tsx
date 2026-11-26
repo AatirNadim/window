@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
+import { toast } from "sonner"
 import {
   Download,
   File as FileIcon,
@@ -26,7 +27,7 @@ interface Props {
   userId: string
   userName: string
   remoteUsers: Record<string, string>
-  onPublish: (offer: SharedFileOffer, file: File) => void
+  onPublish: (offer: SharedFileOffer, file: File) => boolean
   onPull: (offer: SharedFileOffer) => void
   onCancel: (offer: SharedFileOffer) => void
   onRevoke: (offerId: string) => void
@@ -96,6 +97,7 @@ export function PullSharingPanel({
       return
     }
     const createdAt = Date.now()
+    const failedFiles: File[] = []
     for (const file of selectedFiles) {
       const offer: SharedFileOffer = {
         offerId: uuidv4(),
@@ -110,11 +112,15 @@ export function PullSharingPanel({
         visibility,
         recipientIds: visibility === "selected" ? activeRecipients : [],
       }
-      onPublish(offer, file)
+      if (!onPublish(offer, file)) failedFiles.push(file)
     }
-    setSelectedFiles([])
+    const published = selectedFiles.length - failedFiles.length
+    if (published) toast.success(`${published} ${published === 1 ? "file" : "files"} made available`, {
+      description: failedFiles.length ? "Some files could not be offered; they remain selected." : "Eligible peers can request them while you stay in the room.",
+    })
+    setSelectedFiles(failedFiles)
     setFileError("")
-    setRecipients([])
+    if (!failedFiles.length) setRecipients([])
   }
 
   return (

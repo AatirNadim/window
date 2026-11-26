@@ -176,6 +176,11 @@ export default function Room() {
     }
   }
 
+  const leaveRoom = () => {
+    navigate({ to: "/" })
+    toast.info("Left room")
+  }
+
   const handleOpenFileInput = () => {
     const fileInput = document.getElementById("file-input") as HTMLInputElement | null
     if (fileInput && !isSending && isConnected) {
@@ -252,7 +257,7 @@ export default function Room() {
     },
     {
       keys: ["l", "h", "Alt+L", "Alt+H"],
-      handler: () => navigate({ to: "/" }),
+      handler: leaveRoom,
       allowInInput: false,
     },
   ])
@@ -276,7 +281,7 @@ export default function Room() {
         <header className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between gap-2 px-4 py-4 sm:px-6 lg:px-8">
           <Button
             variant="ghost"
-            onClick={() => navigate({ to: "/" })}
+            onClick={leaveRoom}
             className="min-h-11 px-2 sm:px-3 gap-1.5"
           >
             <ArrowLeft size={17} />
@@ -372,7 +377,7 @@ export default function Room() {
                       <Button
                         variant="ghost"
                         className="min-h-11 text-destructive hover:text-destructive gap-1.5"
-                        onClick={() => navigate({ to: "/" })}
+                        onClick={leaveRoom}
                       >
                         <span>Leave</span>
                         <Kbd size="sm" className="hidden md:inline-flex">L</Kbd>

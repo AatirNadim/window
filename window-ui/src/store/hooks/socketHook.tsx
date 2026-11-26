@@ -25,6 +25,9 @@ import { isProtocolId, isValidRemoteOffer, isVisibleOffer, PULL_CONTROL_PROTOCOL
 
 export const useSocket = () => {
   const socketRef = useRef<WebSocket | null>(null)
+  const intentionalShutdown = useRef(false)
+  const signalingErrorShown = useRef(false)
+  const failedPeerTimers = useRef<Record<string, number>>({})
   const peerConnections = useRef<Record<string, RTCPeerConnection>>({})
   const dataChannelMap = useRef<Record<string, RTCDataChannel | null>>({})
   const iceServersPromise = useRef<Promise<RTCIceServer[]> | null>(null)
@@ -61,7 +64,6 @@ export const useSocket = () => {
     identityToken,
     userName,
     roomId,
-    remoteUsers,
     addRemoteUser,
     removeRemoteUser,
     leaveRoom,
@@ -158,12 +160,15 @@ export const useSocket = () => {
       }
 
       socket.onclose = () => {
+        if (intentionalShutdown.current) return
         setStatus("Disconnected from server")
         setIsConnected(false)
-        toast.error("Disconnected", {
-          description:
-            "Disconnected from signaling server. Returning to home page.",
-        })
+        if (!signalingErrorShown.current) {
+          toast.error("Disconnected from the room", {
+            description: "The signaling connection closed. Return home and rejoin the room.",
+          })
+          signalingErrorShown.current = true
+        }
         leaveRoom()
         resetFileStore()
         pullStore.clearPullState()
@@ -173,8 +178,10 @@ export const useSocket = () => {
       }
 
       socket.onerror = () => {
-        toast.error("Connection Error", {
-          description: "Failed to connect to signaling server",
+        if (intentionalShutdown.current || signalingErrorShown.current) return
+        signalingErrorShown.current = true
+        toast.error("Room connection failed", {
+          description: "Could not connect to the signaling server. Check your connection and try again.",
         })
         setStatus("Connection failed")
         leaveRoom()
@@ -204,6 +211,8 @@ export const useSocket = () => {
       console.log("room created with ID:", roomId)
       console.log("user details:", userId, userName)
 
+      intentionalShutdown.current = false
+      signalingErrorShown.current = false
       const wsProtocol = window.location.protocol === "https:" ? "wss" : "ws"
       const socket = new WebSocket(`${wsProtocol}://${serverPath}`)
       socketRef.current = socket
@@ -223,7 +232,10 @@ export const useSocket = () => {
     console.debug("Received signaling message: ", message)
     switch (message.type) {
       case "identity-accepted":
-        if (message.userId === userId) setIdentityToken(message.identityToken)
+        if (message.userId === userId) {
+          setIdentityToken(message.identityToken)
+          toast.success("Joined room", { description: "Share the invite link to connect with peers." })
+        }
         break
       case "user-joined":
         console.log(
@@ -250,7 +262,9 @@ export const useSocket = () => {
           `Remote user ${message.userId} has left the room. Peer connection closed.`,
         )
 
-        const leavingUserName = remoteUsers[message.userId] || "A peer"
+        const leavingUserName = useUserStore.getState().remoteUsers[message.userId] || "A peer"
+        window.clearTimeout(failedPeerTimers.current[message.userId])
+        delete failedPeerTimers.current[message.userId]
         handleRemoteUserLeft(message.userId)
         toast.info("Peer left room", {
           description: `${leavingUserName} has left the room.`,
@@ -362,7 +376,7 @@ export const useSocket = () => {
         const transfer = activeSenderTransfers.current[message.requestId]
         if (!transfer || transfer.sending || transfer.requesterId !== peerId || transfer.offerId !== message.offerId) return
         if (transfer.file.size === message.bytes && transfer.expectedChunks === message.chunks)
-          toast.success(`${transfer.file.name} downloaded by ${useUserStore.getState().remoteUsers[peerId] ?? "a peer"}`)
+          toast.success(`${transfer.file.name} received by ${useUserStore.getState().remoteUsers[peerId] ?? "a peer"}`)
         else toast.error("Download confirmation did not match the transfer")
         activeSenderPulls.current.delete(peerId)
         delete activeSenderTransfers.current[message.requestId]
@@ -511,6 +525,7 @@ export const useSocket = () => {
         10 * 60 * 1000,
       )
     } catch {
+      const cancelled = cancelledSenderPulls.current.has(`${requesterId}:${requestId}`)
       if (channel.readyState === "open")
         channel.send(
           JSON.stringify({
@@ -520,9 +535,10 @@ export const useSocket = () => {
             requestId,
           }),
         )
-      toast.error("Transfer interrupted", {
-        description: `${file.name} could not be sent completely.`,
-      })
+      if (!cancelled && !intentionalShutdown.current)
+        toast.error("Transfer interrupted", {
+          description: `${file.name} could not be sent completely.`,
+        })
       sendControl(requesterId, {
         type: "file-pull-decision",
         offerId,
@@ -585,17 +601,26 @@ export const useSocket = () => {
     const ownOffers = state.offers.filter((item) => item.ownerId === userId && item.expiresAt > Date.now())
     if (!userId || !isProtocolId(offer.offerId) || state.offers.some((item) => item.offerId === offer.offerId) || file.size > 50 * 1024 * 1024 || offer.ownerId !== userId || offer.roomId !== roomId || offer.expiresAt <= Date.now() ||
       ownOffers.length >= 20 || ownOffers.reduce((sum, item) => sum + item.size, file.size) > 200 * 1024 * 1024) {
-      toast.error("Offer could not be published")
-      return
+      toast.error("Offer could not be published", { id: "offer-publish-error", description: "Check the file size and active offer limits, then try again." })
+      return false
     }
     state.addLocalOffer(offer, file)
     Object.keys(dataChannelMap.current).forEach((peerId) => {
       if (isVisibleOffer(offer, peerId)) sendControl(peerId, { type: "file-offer-added", offer })
     })
-    offerTimers.current[offer.offerId] = window.setTimeout(() => removeLocalOffer(offer.offerId, "expired"), Math.max(0, offer.expiresAt - Date.now()))
+    offerTimers.current[offer.offerId] = window.setTimeout(() => {
+      removeLocalOffer(offer.offerId, "expired")
+      toast.info("File offer expired", { description: `${file.name} is no longer available to peers.` })
+    }, Math.max(0, offer.expiresAt - Date.now()))
+    return true
   }
 
-  const revokeFileOffer = (offerId: string) => removeLocalOffer(offerId, "revoked")
+  const revokeFileOffer = (offerId: string) => {
+    const offer = usePullStore.getState().offers.find((item) => item.offerId === offerId && item.ownerId === userId)
+    if (!offer) return
+    removeLocalOffer(offerId, "revoked")
+    toast.info("File offer removed", { description: `${offer.name} is no longer available to peers.` })
+  }
 
   const cancelFilePull = (offer: SharedFileOffer) => {
     const requestId = pendingPullRequests.current[offer.offerId]
@@ -611,6 +636,7 @@ export const useSocket = () => {
     delete pullStartTimers.current[offer.offerId]
     pullStore.setStatus(offer.offerId, "idle")
     pullStore.setProgress(offer.offerId, 0)
+    toast.info("Download cancelled", { description: offer.name })
   }
 
   const reserveIncomingBytes = (channel: RTCDataChannel, size: number) => {
@@ -680,7 +706,9 @@ export const useSocket = () => {
       )
       switch (pc.connectionState) {
         case "connected":
-          if (remoteUsers[remoteUserId]) return
+          window.clearTimeout(failedPeerTimers.current[remoteUserId])
+          delete failedPeerTimers.current[remoteUserId]
+          if (useUserStore.getState().remoteUsers[remoteUserId]) return
           console.debug(
             `Connection established with remote user ${remoteUserId}`,
           )
@@ -692,8 +720,8 @@ export const useSocket = () => {
           addRemoteUser(remoteUserId, remoteUserName)
           setIsConnected(true)
           setStatus("Connected to peer(s)...")
-          toast.success("New User Joined", {
-            description: `A new user, ${remoteUserName}, with ID ${remoteUserId} joined the room.`,
+          toast.success("Peer connected", {
+            description: `${remoteUserName} connected to the room.`,
           })
           break
         case "disconnected":
@@ -703,22 +731,20 @@ export const useSocket = () => {
 
           break
         case "failed":
-          console.warn(
-            `Connection with remote user ${remoteUserId} lost. Attempting to reconnect...`,
-          )
-
-          toast.error("Connection lost with User", {
-            description: `Connection with user ${remoteUserName} lost.`,
-          })
-          handleRemoteUserLeft(remoteUserId)
+          // A normal departure may close WebRTC before the signaling message arrives.
+          if (!failedPeerTimers.current[remoteUserId] && !intentionalShutdown.current) {
+            failedPeerTimers.current[remoteUserId] = window.setTimeout(() => {
+              delete failedPeerTimers.current[remoteUserId]
+              if (intentionalShutdown.current || peerConnections.current[remoteUserId] !== pc || pc.connectionState !== "failed") return
+              toast.error("Peer connection failed", {
+                description: `Could not maintain a connection with ${remoteUserName}.`,
+              })
+              handleRemoteUserLeft(remoteUserId)
+            }, 2000)
+          }
           break
         case "closed":
-          console.warn(`Connection with remote user ${remoteUserId} closed.`)
-          toast.info("Connection Closed", {
-            description: `Connection with user ${remoteUserName} has been closed.`,
-          })
-          handleRemoteUserLeft(remoteUserId)
-
+          // Closing a connection is expected during peer departure and room cleanup.
           break
         default:
           console.debug(
@@ -734,9 +760,6 @@ export const useSocket = () => {
 
       switch (pc.iceConnectionState) {
         case "disconnected":
-          toast.warning("ICE Disconnected", {
-            description: `ICE connection with user ${remoteUserName} disconnected.`,
-          })
           break
         case "failed":
           console.error("ICE connection failed, attempting restart")
@@ -1008,11 +1031,9 @@ export const useSocket = () => {
       peerConnections.current[remoteUserId]?.close()
       delete peerConnections.current[remoteUserId]
 
-      if (Object.keys(peerConnections.current).length === 0) {
-        setStatus("Waiting for other users...")
-      } else if (Object.keys(peerConnections.current).length === 1) {
-        setIsConnected(false)
-      }
+      const connectedPeers = Object.values(peerConnections.current).some((pc) => pc.connectionState === "connected")
+      setIsConnected(connectedPeers)
+      if (!connectedPeers) setStatus("Waiting for other users...")
 
       removeRemoteUser(remoteUserId)
       usePullStore
@@ -1088,8 +1109,10 @@ export const useSocket = () => {
             offerId: pullingOfferId,
             requestId: pullRequestId,
           })
-        delete pendingPullRequests.current[pullingOfferId]
-        pullStore.setStatus(pullingOfferId, "unavailable")
+        if (pendingPullRequests.current[pullingOfferId] === pullRequestId) {
+          delete pendingPullRequests.current[pullingOfferId]
+          pullStore.setStatus(pullingOfferId, "unavailable")
+        }
       }
       clearPullTimer()
       releaseIncomingBytes(channel)
@@ -1114,7 +1137,7 @@ export const useSocket = () => {
       link.download = info.name
       link.click()
       window.setTimeout(() => URL.revokeObjectURL(url), 1000)
-      toast.success(`${info.name} downloaded`)
+      toast.success("File received", { description: `Your browser is downloading ${info.name}.` })
     }
     const armPullTimeout = () => {
       clearPullTimer()
@@ -1257,11 +1280,13 @@ export const useSocket = () => {
               armPullTimeout()
             } else if (
               parsed.kind === "abort" &&
+              pullingOfferId && pullRequestId &&
               pullingOfferId === parsed.offerId &&
               pullRequestId === parsed.requestId
             ) {
-              resetIncomingPull(true)
-              toast.error("Transfer interrupted", {
+              const wasCancelled = pendingPullRequests.current[pullingOfferId] !== pullRequestId
+              resetIncomingPull(!wasCancelled)
+              if (!wasCancelled) toast.error("Transfer interrupted", {
                 description: "The sender stopped this transfer.",
               })
             } else if (
@@ -1368,7 +1393,7 @@ export const useSocket = () => {
 
           setReceivedFileInfo(incomingFileInfo)
           setTransferProgress(0)
-          toast.success("Incoming File", {
+          toast.info("Receiving file", {
             description: `Receiving ${incomingFileInfo.name} (${(incomingFileInfo.size / 1024 / 1024).toFixed(2)} MB)`,
           })
           if (incomingFileInfo.size === 0) {
@@ -1537,16 +1562,19 @@ export const useSocket = () => {
     pullStore.setProgress(offerId, 100)
     pullStore.setStatus(offerId, "idle")
     window.setTimeout(() => pullStore.setProgress(offerId, 0), 3000)
-    toast.success(`${info.name} downloaded`)
+    toast.success("File received", { description: `Your browser is downloading ${info.name}.` })
   }
 
   const cleanUp = () => {
+    intentionalShutdown.current = true
+    Object.values(failedPeerTimers.current).forEach(window.clearTimeout)
+    failedPeerTimers.current = {}
     try {
       Object.values(peerConnections.current).forEach((pc) => pc.close())
 
       console.log("leaving room:", roomId)
 
-      socketRef.current?.send(
+      if (socketRef.current?.readyState === WebSocket.OPEN) socketRef.current.send(
         JSON.stringify({
           type: "leave-room",
           roomId,

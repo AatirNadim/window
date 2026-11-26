@@ -3,6 +3,7 @@ import { act, cleanup, renderHook } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import type { SharedFileOffer } from "@window/shared"
 import { useSocket } from "./socketHook"
+import { toast } from "sonner"
 import { useUserStore } from "../userStore"
 import { usePullStore } from "../pullStore"
 
@@ -21,12 +22,16 @@ class Channel {
 class PeerConnection {
   static latest: PeerConnection
   channel = new Channel()
+  connectionState: RTCPeerConnectionState = "new"
+  onconnectionstatechange: (() => void) | null = null
+  oniceconnectionstatechange: (() => void) | null = null
+  iceConnectionState: RTCIceConnectionState = "new"
   ondatachannel: ((event: { channel: Channel }) => void) | null = null
   constructor() { PeerConnection.latest = this }
   createDataChannel() { return this.channel }
   async createOffer() { return { type: "offer", sdp: "" } }
   async setLocalDescription() {}
-  close() {}
+  close() { this.connectionState = "closed"; this.onconnectionstatechange?.() }
 }
 const makeOffer = (changes: Partial<SharedFileOffer> = {}): SharedFileOffer => ({
   offerId, ownerId: "self", ownerName: "Self", roomId: "room", name: "test.txt", type: "text/plain", size: 0,
@@ -41,7 +46,7 @@ describe("peer offer exchange", () => {
     useUserStore.setState({ userId: "self", userName: "Self", roomId: "room", remoteUsers: {} })
     usePullStore.getState().clearPullState()
   })
-  afterEach(() => { cleanup(); vi.useRealTimers(); vi.unstubAllGlobals(); usePullStore.getState().clearPullState() })
+  afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.useRealTimers(); vi.unstubAllGlobals(); usePullStore.getState().clearPullState() })
 
   async function setup() {
     const hook = renderHook(() => useSocket())
@@ -130,6 +135,53 @@ describe("peer offer exchange", () => {
     const remote = makeOffer({ ownerId: "peer", ownerName: "Peer" })
     act(() => { channel.receive({ type: "file-offer-added", offer: remote }); vi.setSystemTime(remote.expiresAt + 1); hook.result.current.requestFilePull(remote) })
     expect(channel.sent.at(-1)).toMatchObject({ type: "file-pull-request", offerId })
+  })
+
+  it("reports a peer departure once even if WebRTC fails before signaling arrives", async () => {
+    const error = vi.spyOn(toast, "error")
+    const info = vi.spyOn(toast, "info")
+    const { hook, pc } = await setup()
+    act(() => { pc.connectionState = "connected"; pc.onconnectionstatechange?.() })
+    act(() => { pc.connectionState = "failed"; pc.onconnectionstatechange?.() })
+    await act(async () => { await hook.result.current.handleSignalingMessage({ type: "user-left", roomId: "room", userId: "peer" }); vi.advanceTimersByTime(3000) })
+    expect(info).toHaveBeenCalledWith("Peer left room", expect.objectContaining({ description: "Peer has left the room." }))
+    expect(error).not.toHaveBeenCalledWith("Peer connection failed", expect.anything())
+    expect(info).not.toHaveBeenCalledWith("Connection Closed", expect.anything())
+  })
+
+  it("reports a persistent peer failure and suppresses connection-closed noise", async () => {
+    const error = vi.spyOn(toast, "error")
+    const info = vi.spyOn(toast, "info")
+    const { pc } = await setup()
+    act(() => { pc.connectionState = "failed"; pc.onconnectionstatechange?.(); vi.advanceTimersByTime(2000) })
+    expect(error).toHaveBeenCalledWith("Peer connection failed", expect.objectContaining({ description: expect.stringContaining("Peer") }))
+    expect(info).not.toHaveBeenCalledWith("Connection Closed", expect.anything())
+  })
+
+  it("shows one signaling error and stays quiet when the user leaves", () => {
+    class FakeWebSocket {
+      static OPEN = 1
+      static latest: FakeWebSocket
+      readyState = 1
+      onopen: (() => void) | null = null
+      onclose: (() => void) | null = null
+      onerror: (() => void) | null = null
+      onmessage: ((event: { data: string }) => void) | null = null
+      constructor() { FakeWebSocket.latest = this }
+      send() {}
+      close() { this.onclose?.() }
+    }
+    vi.stubGlobal("WebSocket", FakeWebSocket)
+    const error = vi.spyOn(toast, "error")
+    const hook = renderHook(() => useSocket())
+    act(() => { hook.result.current.createWSConnection() })
+    act(() => { FakeWebSocket.latest.onerror?.(); FakeWebSocket.latest.onclose?.() })
+    expect(error).toHaveBeenCalledTimes(1)
+    error.mockClear()
+    useUserStore.setState({ userId: "self", userName: "Self", roomId: "room" })
+    act(() => { hook.result.current.createWSConnection() })
+    act(() => { hook.result.current.cleanUp() })
+    expect(error).not.toHaveBeenCalled()
   })
 
 })

@@ -37,7 +37,9 @@ export const useFile = ({
       return
     }
 
-    const peers = Object.entries(peerConnections.current)
+    const peers = Object.entries(peerConnections.current).filter(
+      ([, pc]) => pc?.connectionState === "connected",
+    )
     if (peers.length === 0) {
       toast.error("No peers connected")
       return

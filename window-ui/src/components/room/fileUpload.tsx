@@ -26,7 +26,13 @@ const FileUpload = ({ isConnected }: FileUploadProps) => {
       filesToBeSent.length,
     )
     result.errors.forEach((error) => toast.error(error))
-    if (result.files.length > 0) addFiles(result.files)
+    if (result.files.length > 0) {
+      const previousCount = useFileStore.getState().filesToBeSent.length
+      addFiles(result.files)
+      const added = useFileStore.getState().filesToBeSent.length - previousCount
+      if (added) toast.success(`${added} ${added === 1 ? "file" : "files"} selected`)
+      if (added < result.files.length) toast.info("Duplicate filenames were skipped")
+    }
   }
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -103,7 +109,10 @@ const FileUpload = ({ isConnected }: FileUploadProps) => {
                 variant="ghost"
                 size="sm"
                 className="min-h-11 text-destructive hover:text-destructive gap-1.5"
-                onClick={clearFilesToBeSent}
+                onClick={() => {
+                  clearFilesToBeSent()
+                  toast.info("Cleared selected files")
+                }}
                 disabled={isSending}
               >
                 <Trash2 size={15} />
@@ -134,7 +143,10 @@ const FileUpload = ({ isConnected }: FileUploadProps) => {
                     variant="ghost"
                     size="icon"
                     className="size-11 shrink-0"
-                    onClick={() => removeFile(file.name)}
+                    onClick={() => {
+                      removeFile(file.name)
+                      toast.info("File removed from selection", { description: file.name })
+                    }}
                     disabled={isSending}
                     aria-label={`Remove ${file.name}`}
                   >

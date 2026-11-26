@@ -34,9 +34,6 @@ export default function Home() {
     // navigate to the new room
     navigate({ to: `/room/${newRoomId}` })
 
-    toast.success("Room Created!", {
-      description: `Your room ID is: ${newRoomId}`,
-    })
   }
 
   const handleJoinRoom = () => {
@@ -68,9 +65,12 @@ export default function Home() {
         setRoomId(clean)
         roomInputRef.current?.focus()
         toast.info("Pasted from clipboard", { description: clean })
+      } else {
+        toast.info("Clipboard is empty", { description: "Copy a room ID, then try again." })
       }
     } catch {
       roomInputRef.current?.focus()
+      toast.error("Could not read the clipboard", { description: "Paste the room ID into the field manually." })
     }
   }
 
