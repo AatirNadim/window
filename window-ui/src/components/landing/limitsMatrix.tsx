@@ -111,17 +111,72 @@ export default function LimitsMatrix() {
           </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 mt-12">
+        <div className="mt-12 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <p className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
             Feature & Boundary Matrix
           </p>
-          <span className="sm:hidden self-start rounded-full bg-secondary px-2.5 py-1 font-mono text-[11px] text-muted-foreground">
-            Scroll table horizontally →
-          </span>
         </div>
 
-        {/* Dense Comparison Table */}
-        <div className="mt-3 overflow-x-auto rounded-2xl border border-border bg-card shadow-xs">
+        {/* Mobile Stacked Comparison Cards (< md) */}
+        <div className="mt-3 grid gap-3 md:hidden">
+          {COMPARISON_ROWS.map((row) => (
+            <div
+              key={row.attribute}
+              className="rounded-xl border border-border bg-card p-4 shadow-2xs"
+            >
+              <h3 className="text-sm font-semibold text-foreground">{row.attribute}</h3>
+              <dl className="mt-3 space-y-2 text-xs">
+                <div className="flex items-start justify-between gap-3 rounded-lg bg-primary/8 px-3 py-2">
+                  <dt className="shrink-0 font-mono font-bold text-primary">Window</dt>
+                  <dd className="flex items-center gap-1.5 text-right font-mono font-bold text-foreground">
+                    {row.windowStatus ? (
+                      <Check size={14} className="shrink-0 text-success" />
+                    ) : (
+                      <span className="shrink-0 text-muted-foreground">•</span>
+                    )}
+                    <span>{row.window}</span>
+                  </dd>
+                </div>
+                <div className="flex items-start justify-between gap-3 px-1">
+                  <dt className="shrink-0 text-muted-foreground">Cloud Drives</dt>
+                  <dd className="flex items-center gap-1.5 text-right text-muted-foreground">
+                    {row.cloudStatus ? (
+                      <Check size={13} className="shrink-0" />
+                    ) : (
+                      <X size={13} className="shrink-0 text-destructive/70" />
+                    )}
+                    <span>{row.cloud}</span>
+                  </dd>
+                </div>
+                <div className="flex items-start justify-between gap-3 px-1">
+                  <dt className="shrink-0 text-muted-foreground">Droppers</dt>
+                  <dd className="flex items-center gap-1.5 text-right text-muted-foreground">
+                    {row.wetransferStatus ? (
+                      <Check size={13} className="shrink-0" />
+                    ) : (
+                      <X size={13} className="shrink-0 text-destructive/70" />
+                    )}
+                    <span>{row.wetransfer}</span>
+                  </dd>
+                </div>
+                <div className="flex items-start justify-between gap-3 px-1">
+                  <dt className="shrink-0 text-muted-foreground">AirDrop</dt>
+                  <dd className="flex items-center gap-1.5 text-right text-muted-foreground">
+                    {row.airdropStatus ? (
+                      <Check size={13} className="shrink-0" />
+                    ) : (
+                      <X size={13} className="shrink-0 text-destructive/70" />
+                    )}
+                    <span>{row.airdrop}</span>
+                  </dd>
+                </div>
+              </dl>
+            </div>
+          ))}
+        </div>
+
+        {/* Dense Comparison Table (>= md) */}
+        <div className="mt-3 hidden overflow-x-auto rounded-2xl border border-border bg-card shadow-xs md:block">
           <table className="w-full min-w-[700px] border-collapse text-left text-xs">
             <thead>
               <tr className="border-b border-border bg-secondary/30">
@@ -202,7 +257,7 @@ export default function LimitsMatrix() {
         </div>
 
         {/* Why 50 MB Architectural Callout Card */}
-        <div className="mt-8 rounded-2xl border border-border bg-card p-6 sm:p-8">
+        <div className="mt-8 rounded-2xl border border-border bg-card p-5 sm:p-8">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
             <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-accent text-accent-foreground">
               <HardDrive size={20} />

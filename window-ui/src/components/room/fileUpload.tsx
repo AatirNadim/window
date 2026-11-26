@@ -68,7 +68,7 @@ const FileUpload = ({ isConnected }: FileUploadProps) => {
           </span>
           <p className="mt-3 text-sm font-semibold flex items-center justify-center gap-1.5 flex-wrap">
             <span>Drop files here or browse</span>
-            <Kbd size="sm">U</Kbd>
+            <Kbd size="sm" className="hidden sm:inline-flex">U</Kbd>
           </p>
           <p className="mt-1 text-sm text-muted-foreground">
             Up to {MAX_FILES_TO_SEND_TOGETHER} files ·{" "}
@@ -108,7 +108,7 @@ const FileUpload = ({ isConnected }: FileUploadProps) => {
               >
                 <Trash2 size={15} />
                 <span>Clear all</span>
-                <Kbd size="sm">X</Kbd>
+                <Kbd size="sm" className="hidden sm:inline-flex">X</Kbd>
               </Button>
             </div>
             <ul

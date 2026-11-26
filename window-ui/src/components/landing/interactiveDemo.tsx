@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react"
 import { motion, useReducedMotion } from "framer-motion"
 import { toast } from "sonner"
 import {
+  ArrowDown,
   ArrowRight,
   Check,
   CheckCircle2,
@@ -179,22 +180,22 @@ export default function InteractiveDemo() {
                         setSelectedFile(file)
                         resetSimulation()
                       }}
-                      className={`flex flex-col items-start rounded-xl border p-3 text-left transition-all ${
+                      className={`flex min-w-0 flex-col items-start rounded-xl border p-3 text-left transition-all ${
                         isSelected
                           ? "border-primary bg-primary/10 shadow-2xs"
                           : "border-border bg-card/60 hover:border-border hover:bg-card"
                       } disabled:opacity-50`}
                     >
-                      <div className="flex w-full items-center justify-between">
+                      <div className="flex w-full items-center justify-between gap-2">
                         <Icon size={16} className={isSelected ? "text-primary" : "text-muted-foreground"} />
                         <span className="font-mono text-[11px] font-semibold text-foreground">
                           {file.sizeMb} MB
                         </span>
                       </div>
-                      <span className="mt-2 truncate text-xs font-semibold text-foreground">
+                      <span className="mt-2 w-full truncate text-xs font-semibold text-foreground">
                         {file.name}
                       </span>
-                      <span className="text-[10px] text-muted-foreground font-mono">
+                      <span className="w-full truncate text-[10px] text-muted-foreground font-mono">
                         {file.chunks} chunks (64KB)
                       </span>
                     </button>
@@ -208,7 +209,7 @@ export default function InteractiveDemo() {
               <p className="font-mono text-xs font-bold uppercase tracking-wider text-muted-foreground">
                 2. Select Transfer Mode
               </p>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2">
                 <button
                   type="button"
                   disabled={status === "streaming" || status === "verifying"}
@@ -216,7 +217,7 @@ export default function InteractiveDemo() {
                     setMode("push")
                     resetSimulation()
                   }}
-                  className={`flex flex-col items-start rounded-xl border p-3 text-left transition-all ${
+                  className={`flex min-w-0 flex-col items-start rounded-xl border p-3 text-left transition-all ${
                     mode === "push"
                       ? "border-primary bg-primary/10 shadow-2xs"
                       : "border-border bg-card/60 hover:bg-card"
@@ -238,7 +239,7 @@ export default function InteractiveDemo() {
                     setMode("pull")
                     resetSimulation()
                   }}
-                  className={`flex flex-col items-start rounded-xl border p-3 text-left transition-all ${
+                  className={`flex min-w-0 flex-col items-start rounded-xl border p-3 text-left transition-all ${
                     mode === "pull"
                       ? "border-primary bg-primary/10 shadow-2xs"
                       : "border-border bg-card/60 hover:bg-card"
@@ -257,13 +258,13 @@ export default function InteractiveDemo() {
           </div>
 
           {/* Interactive Topology Display */}
-          <div className="p-6 sm:p-8">
-            <div className="relative rounded-2xl border border-border/80 bg-background/70 p-6 sm:p-8">
+          <div className="p-4 sm:p-6 lg:p-8">
+            <div className="relative rounded-2xl border border-border/80 bg-background/70 p-4 sm:p-6 lg:p-8">
               {/* Peer A <----> Peer B Network Pipe */}
-              <div className="grid items-center gap-6 md:grid-cols-[1fr_auto_1fr]">
+              <div className="grid items-center gap-4 sm:gap-6 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
                 {/* Peer A (Sender) */}
-                <div className="rounded-xl border border-border bg-card p-4 shadow-2xs">
-                  <div className="flex items-center justify-between">
+                <div className="min-w-0 rounded-xl border border-border bg-card p-4 shadow-2xs">
+                  <div className="flex flex-wrap items-center justify-between gap-1.5">
                     <span className="inline-flex items-center gap-1.5 font-mono text-[11px] font-bold text-primary">
                       <Laptop size={14} /> PEER A (SENDER)
                     </span>
@@ -292,7 +293,7 @@ export default function InteractiveDemo() {
                     DTLS 1.3 / SCTP DataChannel
                   </div>
 
-                  <div className="relative my-2 flex h-8 w-44 items-center justify-center rounded-full border border-border bg-secondary/40 px-3">
+                  <div className="relative my-2 flex h-8 w-full max-w-44 items-center justify-center rounded-full border border-border bg-secondary/40 px-3">
                     {status === "streaming" && !reducedMotion ? (
                       <div className="flex w-full justify-between overflow-hidden">
                         {[0, 1, 2, 3, 4].map((i) => (
@@ -312,7 +313,8 @@ export default function InteractiveDemo() {
                     ) : (
                       <div className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
                         <span>P2P Direct Pipe</span>
-                        <ArrowRight size={13} />
+                        <ArrowRight size={13} className="hidden lg:block" />
+                        <ArrowDown size={13} className="lg:hidden" />
                       </div>
                     )}
                   </div>
@@ -323,8 +325,8 @@ export default function InteractiveDemo() {
                 </div>
 
                 {/* Peer B (Receiver) */}
-                <div className="rounded-xl border border-border bg-card p-4 shadow-2xs">
-                  <div className="flex items-center justify-between">
+                <div className="min-w-0 rounded-xl border border-border bg-card p-4 shadow-2xs">
+                  <div className="flex flex-wrap items-center justify-between gap-1.5">
                     <span className="inline-flex items-center gap-1.5 font-mono text-[11px] font-bold text-foreground">
                       <Laptop size={14} /> PEER B (RECIPIENT)
                     </span>
@@ -416,12 +418,12 @@ export default function InteractiveDemo() {
                       <div className="grid size-9 shrink-0 place-items-center rounded-lg bg-success text-primary-foreground">
                         <CheckCircle2 size={20} />
                       </div>
-                      <div>
+                      <div className="min-w-0 flex-1">
                         <h4 className="text-sm font-bold text-foreground">
                           Direct P2P Transfer Complete
                         </h4>
                         <div className="flex flex-wrap items-center gap-2 pt-0.5">
-                          <p className="font-mono text-xs text-muted-foreground">
+                          <p className="min-w-0 break-words font-mono text-xs text-muted-foreground">
                             SHA-256: {selectedFile.checksum.slice(0, 20)}... (Match) • 0 bytes touched server
                           </p>
                           <button
@@ -452,18 +454,18 @@ export default function InteractiveDemo() {
             </div>
 
             {/* Simulator Action Trigger Buttons */}
-            <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
+            <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <ShieldCheck size={16} className="text-success" />
+                <ShieldCheck size={16} className="shrink-0 text-success" />
                 <span>Simulates genuine WebRTC DataChannel packet fragmentation lifecycle.</span>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                 {status !== "idle" && (
                   <Button
                     variant="outline"
                     onClick={resetSimulation}
-                    className="h-10 rounded-lg border-border bg-card text-xs font-semibold"
+                    className="h-10 flex-1 rounded-lg border-border bg-card text-xs font-semibold sm:flex-initial"
                   >
                     <RotateCcw size={14} /> Reset
                   </Button>
@@ -472,7 +474,7 @@ export default function InteractiveDemo() {
                 <Button
                   onClick={startSimulation}
                   disabled={status === "streaming" || status === "verifying"}
-                  className="h-10 rounded-lg bg-primary px-5 text-xs font-semibold text-primary-foreground shadow-xs hover:opacity-95"
+                  className="h-10 flex-1 rounded-lg bg-primary px-5 text-xs font-semibold text-primary-foreground shadow-xs hover:opacity-95 sm:flex-initial"
                 >
                   <Play size={14} />
                   {status === "completed" ? "Simulate Again" : "Simulate Direct P2P Transfer"}

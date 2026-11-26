@@ -97,7 +97,7 @@ export default function Home() {
   ])
 
   return (
-    <div className="relative isolate min-h-svh bg-background text-foreground">
+    <div className="relative isolate min-h-svh overflow-x-clip bg-background text-foreground">
       <InfiniteWindowBackground />
       <LandingNavbar />
       <main className="relative z-10 flex flex-col">

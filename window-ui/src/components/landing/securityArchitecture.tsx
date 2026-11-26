@@ -85,7 +85,7 @@ export default function SecurityArchitecture() {
         </div>
 
         {/* 2x2 Dense Technical Grid */}
-        <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:gap-8">
+        <div className="mt-12 grid gap-6 md:grid-cols-2 lg:gap-8">
           {ARCHITECTURE_PILLARS.map((pillar, idx) => {
             const Icon = pillar.icon
             return (
@@ -98,7 +98,7 @@ export default function SecurityArchitecture() {
                   duration: reducedMotion ? 0 : 0.3,
                   delay: reducedMotion ? 0 : idx * 0.08,
                 }}
-                className="flex flex-col justify-between rounded-2xl border border-border bg-card p-6 sm:p-8 shadow-xs transition-all hover:border-primary/50"
+                className="flex flex-col justify-between rounded-2xl border border-border bg-card p-5 sm:p-8 shadow-xs transition-all hover:border-primary/50"
               >
                 <div>
                   <div className="flex items-center justify-between">
@@ -136,10 +136,10 @@ export default function SecurityArchitecture() {
                     {pillar.specs.map((spec) => (
                       <div
                         key={spec.label}
-                        className="flex items-center justify-between rounded-lg bg-background/60 px-3 py-1.5"
+                        className="flex flex-col gap-0.5 rounded-lg bg-background/60 px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
                       >
-                        <span className="text-muted-foreground">{spec.label}</span>
-                        <span className="font-bold text-foreground">{spec.value}</span>
+                        <span className="shrink-0 text-muted-foreground">{spec.label}</span>
+                        <span className="font-bold text-foreground sm:text-right">{spec.value}</span>
                       </div>
                     ))}
                   </div>
@@ -150,9 +150,9 @@ export default function SecurityArchitecture() {
         </div>
 
         {/* Signaling Transparency Callout */}
-        <div className="mt-12 rounded-2xl border border-border bg-card p-6 shadow-xs sm:p-8">
+        <div className="mt-12 rounded-2xl border border-border bg-card p-5 shadow-xs sm:p-8">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex items-start gap-4">
+            <div className="flex flex-col items-start gap-4 sm:flex-row">
               <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground">
                 <ServerOff size={20} />
               </span>

@@ -34,7 +34,7 @@ export default function LandingNavbar() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/80 bg-background/85 backdrop-blur-md transition-colors">
-      <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-2 px-4 sm:px-6 lg:px-8">
         {/* Brand Mark */}
         <a
           href="#"
@@ -57,8 +57,8 @@ export default function LandingNavbar() {
           </span>
         </a>
 
-        {/* Live Protocol Status Badge (Tablet / Desktop) */}
-        <div className="hidden items-center gap-2 rounded-full border border-border/80 bg-card/60 px-3.5 py-1 text-xs font-medium text-muted-foreground shadow-2xs md:flex">
+        {/* Live Protocol Status Badge (Tablet / Large Desktop) */}
+        <div className="hidden items-center gap-2 rounded-full border border-border/80 bg-card/60 px-3.5 py-1 text-xs font-medium text-muted-foreground shadow-2xs md:flex lg:hidden xl:flex">
           <span className="relative flex size-2">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
             <span className="relative inline-flex size-2 rounded-full bg-success" />
@@ -69,14 +69,14 @@ export default function LandingNavbar() {
         </div>
 
         {/* Desktop Navigation Links & Actions */}
-        <div className="hidden items-center gap-6 lg:flex">
-          <nav className="flex items-center gap-5 text-sm font-medium" aria-label="Main Navigation">
+        <div className="hidden items-center gap-5 xl:gap-6 lg:flex">
+          <nav className="flex items-center gap-4 xl:gap-5 text-sm font-medium" aria-label="Main Navigation">
             {NAV_LINKS.map((link) => (
               <a
                 key={link.href}
                 href={link.href}
                 onClick={(e) => handleScrollTo(e, link.href)}
-                className="text-muted-foreground transition-colors hover:text-foreground"
+                className="whitespace-nowrap text-muted-foreground transition-colors hover:text-foreground"
               >
                 {link.label}
               </a>
@@ -119,7 +119,7 @@ export default function LandingNavbar() {
 
       {/* Mobile Dropdown Menu */}
       {mobileMenuOpen && (
-        <div className="border-b border-border bg-card px-4 py-4 shadow-lg sm:px-6 lg:hidden animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="max-h-[calc(100dvh-4rem)] overflow-y-auto border-b border-border bg-card px-4 py-4 shadow-lg sm:px-6 lg:hidden animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="mb-3 flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-xs font-medium text-muted-foreground">
             <span className="relative flex size-2">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />

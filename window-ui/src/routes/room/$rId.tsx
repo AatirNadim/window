@@ -259,17 +259,21 @@ export default function Room() {
 
   return (
     <SidebarProvider>
-      <Sidebar side="left" className="room-sharing-sidebar hidden lg:flex">
+      <Sidebar
+        side="left"
+        wrapperClassName="hidden lg:block"
+        className="room-sharing-sidebar hidden lg:flex"
+      >
         <SidebarContent>
           <RemoteUsersPanel remoteUsers={remoteUsers} />
         </SidebarContent>
       </Sidebar>
-      <main className="relative isolate min-h-svh w-full min-w-0 bg-background">
+      <main className="relative isolate min-h-svh w-full min-w-0 overflow-x-clip bg-background">
         <div
           aria-hidden="true"
           className="room-dotted-background pointer-events-none absolute inset-0 z-0"
         />
-        <header className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 py-4 sm:px-6 lg:px-8">
+        <header className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between gap-2 px-4 py-4 sm:px-6 lg:px-8">
           <Button
             variant="ghost"
             onClick={() => navigate({ to: "/" })}
@@ -285,7 +289,7 @@ export default function Room() {
                 <SheetTrigger asChild>
                   <Button
                     variant="outline"
-                    className="min-h-11 gap-2 rounded-lg bg-card"
+                    className="min-h-11 gap-1.5 px-2.5 sm:gap-2 sm:px-3 rounded-lg bg-card"
                     aria-label={`Show ${remoteUserCount} connected peers`}
                   >
                     <Users size={17} />
@@ -293,10 +297,10 @@ export default function Room() {
                     <span className="rounded-full bg-secondary px-2 py-0.5 text-xs">
                       {remoteUserCount}
                     </span>
-                    <Kbd size="sm">P</Kbd>
+                    <Kbd size="sm" className="hidden sm:inline-flex">P</Kbd>
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="left" className="w-[min(22rem,90vw)] p-3">
+                <SheetContent side="left" className="w-[min(22rem,90vw)] p-3 pt-12">
                   <SheetTitle className="sr-only">Connected peers</SheetTitle>
                   <RemoteUsersPanel remoteUsers={remoteUsers} />
                 </SheetContent>
@@ -314,9 +318,9 @@ export default function Room() {
             transition={{ duration: reducedMotion ? 0 : 0.18 }}
             className="mx-auto w-full max-w-6xl"
           >
-            <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,0.9fr)]">
+            <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(20rem,0.9fr)]">
               <Card className="gap-0 py-0 overflow-hidden rounded-2xl border-border shadow-sm">
-                <CardHeader className="gap-5 border-b border-border p-5 sm:p-6">
+                <CardHeader className="gap-4 sm:gap-5 border-b border-border p-4 sm:p-6">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-muted-foreground">
@@ -325,7 +329,7 @@ export default function Room() {
                       <CardTitle className="mt-1 text-2xl font-semibold tracking-tight sm:text-[1.75rem]">
                         Your files, together
                       </CardTitle>
-                      <CardDescription className="mt-2 flex min-w-0 items-center gap-2 text-sm">
+                      <CardDescription className="mt-2 flex min-w-0 flex-wrap items-center gap-2 text-sm">
                         <span
                           className={cn(
                             "inline-flex min-h-7 items-center gap-1.5 rounded-full px-2.5 font-medium",
@@ -392,7 +396,7 @@ export default function Room() {
                   </div>
                 </CardHeader>
 
-                <CardContent className="space-y-5 p-5 sm:p-6">
+                <CardContent className="space-y-5 p-4 sm:p-6">
                   <div>
                     <h2 className="text-base font-semibold">Send files</h2>
                     <p className="mt-1 text-sm leading-5 text-muted-foreground">
@@ -421,7 +425,11 @@ export default function Room() {
                             ? `${filesToBeSent.length} ${filesToBeSent.length === 1 ? "file" : "files"}`
                             : "files"}
                         </span>
-                        <Kbd variant="primary" size="sm" className="ml-1">
+                        <Kbd
+                          variant="primary"
+                          size="sm"
+                          className="ml-1 hidden sm:inline-flex"
+                        >
                           S
                         </Kbd>
                       </>

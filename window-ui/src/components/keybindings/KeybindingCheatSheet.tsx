@@ -107,7 +107,7 @@ export function KeybindingCheatSheet() {
               placeholder="Search shortcuts (e.g., create, send, copy, files, Esc)..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 pr-9 h-10 text-sm bg-background/80"
+              className="pl-9 pr-9 h-10 text-base sm:text-sm bg-background/80"
               autoFocus
             />
             {searchQuery && (
@@ -123,7 +123,7 @@ export function KeybindingCheatSheet() {
           </div>
 
           {/* Category filter pills */}
-          <div className="flex flex-wrap items-center gap-1.5 pt-2 pb-0.5 text-xs">
+          <div className="flex flex-nowrap items-center gap-1.5 overflow-x-auto pt-2 pb-0.5 text-xs sm:flex-wrap sm:overflow-visible">
             {CATEGORIES.map((cat) => {
               const count = categoryCounts[cat] || 0
               const isSelected = selectedCategory === cat

@@ -70,7 +70,7 @@ export default function HeroSection({
   }
 
   return (
-    <section className="relative mx-auto grid w-full max-w-6xl items-center gap-12 py-10 sm:py-14 lg:grid-cols-[minmax(0,1.15fr)_minmax(22rem,0.85fr)] lg:gap-16 lg:py-20">
+    <section className="relative mx-auto grid w-full max-w-6xl items-center gap-8 py-8 sm:gap-12 sm:py-14 lg:grid-cols-[minmax(0,1.15fr)_minmax(22rem,0.85fr)] lg:gap-16 lg:py-20">
       {/* Left Column: Vision & Value Proposition */}
       <motion.div
         initial={reducedMotion ? false : { opacity: 0, y: 14 }}
@@ -99,7 +99,7 @@ export default function HeroSection({
         </div>
 
         {/* Headline */}
-        <h1 className="mt-6 max-w-[14ch] text-[clamp(2.5rem,5.5vw,3.75rem)] font-bold leading-[1.05] tracking-[-0.045em] text-foreground">
+        <h1 className="mt-6 max-w-[14ch] text-[clamp(2.125rem,5.5vw,3.75rem)] font-bold leading-[1.05] tracking-[-0.045em] text-foreground">
           Send files directly, without the upload step.
         </h1>
 
@@ -164,7 +164,7 @@ export default function HeroSection({
         <Card className="w-full gap-0 py-0 rounded-2xl border-border bg-card shadow-sm transition-all lg:max-w-[28rem]">
           {/* Card Console Header */}
           <CardHeader className="space-y-1.5 border-b border-border/80 p-5 sm:p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="font-mono text-xs font-bold uppercase tracking-widest text-primary">
                 Quick Connect
               </span>
@@ -232,7 +232,7 @@ export default function HeroSection({
                       type="button"
                       onClick={handlePasteClick}
                       disabled={isPasting}
-                      className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
+                      className="inline-flex min-h-9 items-center gap-1 rounded-md px-2 -mr-2 text-[11px] font-medium text-primary hover:underline"
                     >
                       <ClipboardPaste size={12} />
                       <span>Paste</span>
@@ -251,7 +251,7 @@ export default function HeroSection({
                   onChange={(event) => setRoomId(event.target.value)}
                   autoComplete="off"
                   spellCheck="false"
-                  className="h-11 rounded-lg border-border bg-background/80 font-mono text-sm tracking-tight placeholder:font-sans placeholder:tracking-normal focus-visible:ring-primary"
+                  className="h-11 rounded-lg border-border bg-background/80 font-mono text-base tracking-tight placeholder:font-sans placeholder:tracking-normal focus-visible:ring-primary sm:text-sm"
                 />
               </div>
 

@@ -19,7 +19,7 @@ export default function LandingFooter({ handleCreateRoom }: LandingFooterProps) 
     <footer className="relative z-10 w-full border-t border-border">
       {/* Bottom CTA Card Container */}
       <div className="mx-auto max-w-6xl px-4 pt-16 pb-12 sm:px-6 lg:px-8">
-        <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-8 sm:p-12 shadow-sm">
+        <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-5 sm:p-8 lg:p-12 shadow-sm">
           {/* Architectural blueprint coordinate & concentric ring accent */}
           <div
             aria-hidden="true"
@@ -49,10 +49,10 @@ export default function LandingFooter({ handleCreateRoom }: LandingFooterProps) 
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
               <Button
                 onClick={handleCreateRoom}
-                className="group h-12 rounded-lg bg-primary px-6 text-sm font-semibold text-primary-foreground shadow-xs hover:opacity-95"
+                className="group h-12 w-full justify-center rounded-lg bg-primary px-6 text-sm font-semibold text-primary-foreground shadow-xs hover:opacity-95 sm:w-auto"
               >
                 <Plus size={18} className="transition-transform group-hover:rotate-90" />
                 <span>Create instant room</span>
@@ -63,7 +63,7 @@ export default function LandingFooter({ handleCreateRoom }: LandingFooterProps) 
                 href="https://github.com/AatirNadim/window"
                 target="_blank"
                 rel="noreferrer noopener"
-                className="inline-flex h-12 items-center gap-2 rounded-lg border border-border bg-card px-5 text-sm font-semibold text-foreground transition-colors hover:bg-secondary"
+                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg border border-border bg-card px-5 text-sm font-semibold text-foreground transition-colors hover:bg-secondary sm:w-auto"
               >
                 <Github size={18} />
                 <span>GitHub Source</span>
@@ -72,17 +72,17 @@ export default function LandingFooter({ handleCreateRoom }: LandingFooterProps) 
           </div>
 
           {/* Operational Status Pill */}
-          <div className="mt-8 flex flex-wrap items-center gap-4 border-t border-border/80 pt-6 font-mono text-xs text-muted-foreground">
+          <div className="mt-8 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border/80 pt-6 font-mono text-xs text-muted-foreground">
             <div className="flex items-center gap-2">
               <span className="size-2 rounded-full bg-success" />
               <span>Signaling Server: Online</span>
             </div>
-            <span className="text-border">•</span>
+            <span className="hidden text-border sm:inline">•</span>
             <div className="flex items-center gap-2">
               <span className="size-2 rounded-full bg-success" />
               <span>STUN ICE Node: Active</span>
             </div>
-            <span className="text-border">•</span>
+            <span className="hidden text-border sm:inline">•</span>
             <div className="flex items-center gap-2">
               <span className="size-2 rounded-full bg-success" />
               <span>Payload Durability: 0 Bytes</span>

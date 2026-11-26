@@ -37,7 +37,7 @@ export default function ModesComparison() {
         <div className="mt-12 grid gap-8 lg:grid-cols-2">
           {/* Card 1: Immediate Send (Push) */}
           <div
-            className={`group relative flex flex-col justify-between rounded-2xl border p-6 sm:p-8 transition-all ${
+            className={`group relative flex flex-col justify-between rounded-2xl border p-5 sm:p-8 transition-all ${
               activeTab === "push"
                 ? "border-primary/80 bg-card shadow-sm ring-1 ring-primary/20"
                 : "border-border bg-card/60 hover:border-border hover:bg-card"
@@ -45,7 +45,7 @@ export default function ModesComparison() {
           >
             <div>
               {/* Badge & Title */}
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-accent/70 px-3 py-1 font-mono text-xs font-bold tracking-wide text-accent-foreground">
                   <Zap size={13} className="text-primary" /> PARALLEL BROADCAST
                 </span>
@@ -62,19 +62,19 @@ export default function ModesComparison() {
 
               {/* Technical Limits & Properties */}
               <div className="mt-6 space-y-3 border-t border-border/80 pt-6 font-mono text-xs">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5">
                   <span className="text-muted-foreground">Max files per batch:</span>
                   <span className="font-bold text-foreground">Up to 5 files</span>
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5">
                   <span className="text-muted-foreground">Single file ceiling:</span>
                   <span className="font-bold text-foreground">50 MB max</span>
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5">
                   <span className="text-muted-foreground">Batch file limit:</span>
                   <span className="font-bold text-foreground">6 MB each</span>
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5">
                   <span className="text-muted-foreground">Sender memory retention:</span>
                   <span className="font-bold text-success">0s (Streamed and discarded)</span>
                 </div>
@@ -111,7 +111,7 @@ export default function ModesComparison() {
 
           {/* Card 2: Available Files (Pull Offers) */}
           <div
-            className={`group relative flex flex-col justify-between rounded-2xl border p-6 sm:p-8 transition-all ${
+            className={`group relative flex flex-col justify-between rounded-2xl border p-5 sm:p-8 transition-all ${
               activeTab === "pull"
                 ? "border-pink-accent/80 bg-card shadow-sm ring-1 ring-pink-accent/30"
                 : "border-border bg-card/60 hover:border-border hover:bg-card"
@@ -119,7 +119,7 @@ export default function ModesComparison() {
           >
             <div>
               {/* Badge & Title */}
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-pink-accent/20 px-3 py-1 font-mono text-xs font-bold tracking-wide text-foreground">
                   <Clock size={13} className="text-foreground" /> SELECTIVE DEMAND-PULL
                 </span>
@@ -136,19 +136,19 @@ export default function ModesComparison() {
 
               {/* Technical Limits & Properties */}
               <div className="mt-6 space-y-3 border-t border-border/80 pt-6 font-mono text-xs">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5">
                   <span className="text-muted-foreground">File size limit:</span>
                   <span className="font-bold text-foreground">50 MB per file</span>
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5">
                   <span className="text-muted-foreground">Aggregate memory ceiling:</span>
                   <span className="font-bold text-foreground">200 MB aggregate RAM</span>
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5">
                   <span className="text-muted-foreground">Self-destruct timers:</span>
                   <span className="font-bold text-foreground">5m, 10m, 15m, 60m</span>
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5">
                   <span className="text-muted-foreground">Selective authorization:</span>
                   <span className="font-bold text-foreground">Peer-specific access toggle</span>
                 </div>
@@ -185,7 +185,7 @@ export default function ModesComparison() {
         </div>
 
         {/* Interactive Sequence Flow Diagram */}
-        <div className="mt-12 rounded-2xl border border-border bg-card p-6 sm:p-8 shadow-xs">
+        <div className="mt-12 rounded-2xl border border-border bg-card p-5 sm:p-8 shadow-xs">
           <div className="flex flex-col gap-4 border-b border-border/80 pb-6 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <span className="font-mono text-xs font-bold uppercase tracking-wider text-primary">
@@ -197,11 +197,11 @@ export default function ModesComparison() {
             </div>
 
             {/* Toggle Buttons */}
-            <div className="flex rounded-xl border border-border bg-secondary/30 p-1">
+            <div className="flex w-full rounded-xl border border-border bg-secondary/30 p-1 sm:w-auto">
               <button
                 type="button"
                 onClick={() => setActiveTab("push")}
-                className={`rounded-lg px-4 py-1.5 text-xs font-bold transition-all ${
+                className={`flex-1 rounded-lg px-4 py-1.5 text-xs font-bold transition-all sm:flex-initial ${
                   activeTab === "push"
                     ? "bg-card text-foreground shadow-2xs"
                     : "text-muted-foreground hover:text-foreground"
@@ -212,7 +212,7 @@ export default function ModesComparison() {
               <button
                 type="button"
                 onClick={() => setActiveTab("pull")}
-                className={`rounded-lg px-4 py-1.5 text-xs font-bold transition-all ${
+                className={`flex-1 rounded-lg px-4 py-1.5 text-xs font-bold transition-all sm:flex-initial ${
                   activeTab === "pull"
                     ? "bg-card text-foreground shadow-2xs"
                     : "text-muted-foreground hover:text-foreground"
