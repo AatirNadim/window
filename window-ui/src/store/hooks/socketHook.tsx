@@ -21,6 +21,7 @@ import {
   unframeTransferChunk,
 } from "@/lib/transferProtocol"
 import { v4 as uuidv4 } from "uuid"
+import { isProtocolId, isValidRemoteOffer, isVisibleOffer, PULL_CONTROL_PROTOCOL } from "@/lib/pullProtocol"
 
 export const useSocket = () => {
   const socketRef = useRef<WebSocket | null>(null)
@@ -36,6 +37,7 @@ export const useSocket = () => {
         requesterId: string
         file: File
         expectedChunks: number
+        sending: boolean
       }
     >
   >({})
@@ -44,7 +46,9 @@ export const useSocket = () => {
     bytes: 0,
     byChannel: new Map<RTCDataChannel, number>(),
   })
-  const pendingOfferFiles = useRef<Record<string, File>>({})
+  const offerTimers = useRef<Record<string, number>>({})
+  // Retain only expiry metadata briefly to answer requests already in flight.
+  const expiredOffers = useRef(new Map<string, { retainUntil: number; visibility: SharedFileOffer["visibility"]; recipientIds: string[] }>())
   const pendingPullRequests = useRef<Record<string, string>>({})
   const pullStartTimers = useRef<Record<string, number>>({})
 
@@ -74,6 +78,52 @@ export const useSocket = () => {
     for (const timer of Object.values(pullStartTimers.current))
       window.clearTimeout(timer)
     pullStartTimers.current = {}
+  }
+
+  const clearOfferTimers = () => {
+    Object.values(offerTimers.current).forEach(window.clearTimeout)
+    offerTimers.current = {}
+    expiredOffers.current.clear()
+  }
+
+  const sendControl = (peerId: string, message: object) => {
+    const channel = dataChannelMap.current[peerId]
+    if (!channel || channel.readyState !== "open") return false
+    try {
+      channel.send(JSON.stringify({ protocol: PULL_CONTROL_PROTOCOL, ...message }))
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  const sendSnapshot = (peerId: string) => {
+    const state = usePullStore.getState()
+    const offers = state.offers.filter((offer) =>
+      offer.ownerId === userId && state.files[offer.offerId] && isVisibleOffer(offer, peerId),
+    )
+    sendControl(peerId, { type: "file-offer-snapshot", offers })
+  }
+
+  const removeLocalOffer = (offerId: string, reason: "expired" | "revoked") => {
+    const state = usePullStore.getState()
+    const offer = state.offers.find((item) => item.offerId === offerId && item.ownerId === userId)
+    if (!offer) return
+    if (reason === "expired") {
+      const now = Date.now()
+      for (const [id, expired] of expiredOffers.current) {
+        if (expired.retainUntil <= now) expiredOffers.current.delete(id)
+      }
+      expiredOffers.current.set(offerId, { retainUntil: now + 120_000, visibility: offer.visibility, recipientIds: offer.recipientIds })
+      if (expiredOffers.current.size > 100) expiredOffers.current.delete(expiredOffers.current.keys().next().value!)
+    }
+    Object.keys(dataChannelMap.current).forEach((peerId) => {
+      if (offer.visibility === "room" || offer.recipientIds.includes(peerId))
+        sendControl(peerId, { type: "file-offer-removed", offerId, reason })
+    })
+    window.clearTimeout(offerTimers.current[offerId])
+    delete offerTimers.current[offerId]
+    state.removeOffer(offerId)
   }
 
   const registerListenersForSocket = (socket: WebSocket) => {
@@ -117,7 +167,7 @@ export const useSocket = () => {
         leaveRoom()
         resetFileStore()
         pullStore.clearPullState()
-        pendingOfferFiles.current = {}
+        clearOfferTimers()
         pendingPullRequests.current = {}
         clearPullStartTimers()
       }
@@ -130,7 +180,7 @@ export const useSocket = () => {
         leaveRoom()
         resetFileStore()
         pullStore.clearPullState()
-        pendingOfferFiles.current = {}
+        clearOfferTimers()
         pendingPullRequests.current = {}
         clearPullStartTimers()
       }
@@ -195,114 +245,6 @@ export const useSocket = () => {
         await handleIceCandidate(message)
         break
 
-      case "file-offer-snapshot":
-        pullStore.setOffers(message.offers)
-        break
-      case "file-offer-added":
-        if (
-          message.offer.ownerId === userId &&
-          pendingOfferFiles.current[message.offer.offerId]
-        ) {
-          pullStore.addLocalOffer(
-            message.offer,
-            pendingOfferFiles.current[message.offer.offerId],
-          )
-          delete pendingOfferFiles.current[message.offer.offerId]
-        } else {
-          pullStore.upsertOffer(message.offer)
-        }
-        break
-      case "file-offer-removed":
-        pullStore.removeOffer(message.offerId)
-        delete pendingPullRequests.current[message.offerId]
-        if (pullStartTimers.current[message.offerId])
-          window.clearTimeout(pullStartTimers.current[message.offerId])
-        delete pullStartTimers.current[message.offerId]
-        break
-      case "file-pull-request":
-        await handlePullRequest(
-          message.offerId,
-          message.requestId,
-          message.requesterId,
-        )
-        break
-      case "file-pull-decision":
-        if (!pendingPullRequests.current[message.offerId]) break
-        pullStore.setStatus(
-          message.offerId,
-          message.accepted ? "downloading" : "idle",
-        )
-        if (pullStartTimers.current[message.offerId]) {
-          window.clearTimeout(pullStartTimers.current[message.offerId])
-          delete pullStartTimers.current[message.offerId]
-        }
-        if (message.accepted) {
-          pullStartTimers.current[message.offerId] = window.setTimeout(() => {
-            if (pendingPullRequests.current[message.offerId] === message.requestId) {
-              sendWsMessage({
-                type: "cancel-file-pull",
-                offerId: message.offerId,
-                requestId: message.requestId,
-              })
-              delete pendingPullRequests.current[message.offerId]
-              delete pullStartTimers.current[message.offerId]
-              pullStore.setStatus(message.offerId, "unavailable")
-              toast.error("Sender did not start the download", {
-                description: "Retry while the sender is online.",
-              })
-            }
-          }, 30_000)
-        }
-        if (!message.accepted) {
-          delete pendingPullRequests.current[message.offerId]
-          toast.error(message.reason || "The sender declined the download")
-        }
-        break
-      case "file-pull-rejected":
-        pullStore.setStatus(message.offerId, "idle")
-        delete pendingPullRequests.current[message.offerId]
-        if (pullStartTimers.current[message.offerId])
-          window.clearTimeout(pullStartTimers.current[message.offerId])
-        delete pullStartTimers.current[message.offerId]
-        toast.error(message.reason)
-        break
-      case "file-pull-cancelled": {
-        const transferKey = `${message.requesterId}:${message.requestId}`
-        cancelledSenderPulls.current.add(transferKey)
-        activeSenderPulls.current.delete(message.requesterId)
-        delete activeSenderTransfers.current[message.requestId]
-        const channel = dataChannelMap.current[message.requesterId]
-        if (channel?.readyState === "open")
-          channel.send(
-            JSON.stringify({
-              protocol: "window-pull-v1",
-              kind: "abort",
-              offerId: message.offerId,
-              requestId: message.requestId,
-            }),
-          )
-        break
-      }
-      case "file-pull-finished": {
-        const transfer = activeSenderTransfers.current[message.requestId]
-        if (
-          transfer &&
-          transfer.offerId === message.offerId &&
-          transfer.requesterId === message.requesterId &&
-          transfer.file.size === message.bytes &&
-          transfer.expectedChunks === message.chunks
-        ) {
-          toast.success(
-            `${transfer.file.name} downloaded by ${remoteUsers[message.requesterId] ?? "a peer"}`,
-          )
-        } else {
-          toast.error("Download confirmation did not match the transfer")
-        }
-        activeSenderPulls.current.delete(message.requesterId)
-        delete activeSenderTransfers.current[message.requestId]
-        break
-      }
-
       case "user-left": {
         console.debug(
           `Remote user ${message.userId} has left the room. Peer connection closed.`,
@@ -333,14 +275,122 @@ export const useSocket = () => {
     }
   }
 
+  const handlePeerControl = (message: {
+    type: string
+    offers: unknown
+    offer: SharedFileOffer
+    offerId: string
+    requestId: string
+    accepted: boolean
+    reason: unknown
+    bytes: number
+    chunks: number
+  }, peerId: string) => {
+    if (!roomId || !userId || typeof message.type !== "string") return
+    const state = usePullStore.getState()
+    const remoteOffer = (offerId: string) => state.offers.find(
+      (offer) => offer.offerId === offerId && offer.ownerId === peerId,
+    )
+    switch (message.type) {
+      case "file-offer-snapshot": {
+        if (!Array.isArray(message.offers) || message.offers.length > 20) return
+        // An offer can expire in transit without invalidating the rest of the snapshot.
+        const offers = message.offers.filter((offer: SharedFileOffer) =>
+          !offer || !Number.isFinite(offer.expiresAt) || offer.expiresAt > Date.now(),
+        )
+        if (!offers.every((offer: unknown) => isValidRemoteOffer(offer, peerId, roomId, userId))) return
+        const ids = new Set(offers.map((offer: SharedFileOffer) => offer.offerId))
+        if (ids.size !== offers.length) return
+        state.offers.filter((offer) => offer.ownerId === peerId && !ids.has(offer.offerId))
+          .forEach((offer) => state.removeOffer(offer.offerId))
+        offers.forEach((offer: SharedFileOffer) => {
+          if (!state.offers.some((existing) => existing.offerId === offer.offerId && existing.ownerId !== peerId))
+            usePullStore.getState().upsertOffer(offer)
+        })
+        break
+      }
+      case "file-offer-added":
+        if (isValidRemoteOffer(message.offer, peerId, roomId, userId) &&
+          !state.offers.some((offer) => offer.offerId === message.offer.offerId && offer.ownerId !== peerId) &&
+          state.offers.filter((offer) => offer.ownerId === peerId).length < 20)
+          state.upsertOffer(message.offer)
+        break
+      case "file-offer-removed":
+        if (!remoteOffer(message.offerId)) return
+        if (pendingPullRequests.current[message.offerId] && message.reason === "expired")
+          toast.error("This file offer has expired. Ask the sender to offer the file again.")
+        state.removeOffer(message.offerId)
+        delete pendingPullRequests.current[message.offerId]
+        window.clearTimeout(pullStartTimers.current[message.offerId])
+        delete pullStartTimers.current[message.offerId]
+        break
+      case "file-pull-request":
+        if (isProtocolId(message.offerId) && isProtocolId(message.requestId))
+          void handlePullRequest(message.offerId, message.requestId, peerId)
+        break
+      case "file-pull-decision":
+        if (!remoteOffer(message.offerId) || pendingPullRequests.current[message.offerId] !== message.requestId || typeof message.accepted !== "boolean") return
+        state.setStatus(message.offerId, message.accepted ? "downloading" : "idle")
+        window.clearTimeout(pullStartTimers.current[message.offerId])
+        delete pullStartTimers.current[message.offerId]
+        if (message.accepted) {
+          pullStartTimers.current[message.offerId] = window.setTimeout(() => {
+            if (pendingPullRequests.current[message.offerId] !== message.requestId) return
+            sendControl(peerId, { type: "cancel-file-pull", offerId: message.offerId, requestId: message.requestId })
+            delete pendingPullRequests.current[message.offerId]
+            delete pullStartTimers.current[message.offerId]
+            usePullStore.getState().setStatus(message.offerId, "unavailable")
+            toast.error("Sender did not start the download")
+          }, 30_000)
+        } else {
+          delete pendingPullRequests.current[message.offerId]
+          toast.error(typeof message.reason === "string" ? message.reason : "The sender declined the download")
+        }
+        break
+      case "cancel-file-pull": {
+        const transfer = activeSenderTransfers.current[message.requestId]
+        if (!transfer || transfer.requesterId !== peerId || transfer.offerId !== message.offerId) return
+        cancelledSenderPulls.current.add(`${peerId}:${message.requestId}`)
+        if (!transfer.sending) {
+          activeSenderPulls.current.delete(peerId)
+          delete activeSenderTransfers.current[message.requestId]
+          cancelledSenderPulls.current.delete(`${peerId}:${message.requestId}`)
+        }
+        break
+      }
+      case "finish-file-pull": {
+        const transfer = activeSenderTransfers.current[message.requestId]
+        if (!transfer || transfer.sending || transfer.requesterId !== peerId || transfer.offerId !== message.offerId) return
+        if (transfer.file.size === message.bytes && transfer.expectedChunks === message.chunks)
+          toast.success(`${transfer.file.name} downloaded by ${useUserStore.getState().remoteUsers[peerId] ?? "a peer"}`)
+        else toast.error("Download confirmation did not match the transfer")
+        activeSenderPulls.current.delete(peerId)
+        delete activeSenderTransfers.current[message.requestId]
+        break
+      }
+    }
+  }
+
   const handlePullRequest = async (
     offerId: string,
     requestId: string,
     requesterId: string,
   ) => {
-    const offer = pullStore.offers.find((item) => item.offerId === offerId)
-    const file = pullStore.files[offerId]
+    const offer = usePullStore.getState().offers.find((item) => item.offerId === offerId)
+    const file = usePullStore.getState().files[offerId]
     const channel = dataChannelMap.current[requesterId]
+    const expired = expiredOffers.current.get(offerId)
+    if (expired && expired.retainUntil <= Date.now()) expiredOffers.current.delete(offerId)
+    const expiredOffer = offer?.ownerId === userId && offer.expiresAt <= Date.now() ? offer :
+      expired && expired.retainUntil > Date.now() ? expired : undefined
+    const wasEligible = expiredOffer && (expiredOffer.visibility === "room" || expiredOffer.recipientIds.includes(requesterId))
+    if (wasEligible) {
+      sendControl(requesterId, {
+        type: "file-pull-decision", offerId, requestId, accepted: false,
+        reason: "This file offer has expired. Ask the sender to offer the file again.",
+      })
+      return
+    }
     const allowed =
       offer &&
       offer.ownerId === userId &&
@@ -351,9 +401,11 @@ export const useSocket = () => {
       !file ||
       !channel ||
       channel.readyState !== "open" ||
-      activeSenderPulls.current.has(requesterId)
+      activeSenderPulls.current.has(requesterId) ||
+      activeSenderPulls.current.size >= 3 ||
+      !!activeSenderTransfers.current[requestId]
     ) {
-      sendWsMessage({
+      sendControl(requesterId, {
         type: "file-pull-decision",
         offerId,
         requestId,
@@ -371,8 +423,9 @@ export const useSocket = () => {
       requesterId,
       file,
       expectedChunks,
+      sending: true,
     }
-    sendWsMessage({
+    sendControl(requesterId, {
       type: "file-pull-decision",
       offerId,
       requestId,
@@ -428,10 +481,14 @@ export const useSocket = () => {
         if (cancelledSenderPulls.current.has(`${requesterId}:${requestId}`))
           throw new Error("Transfer cancelled by recipient")
         const framedChunk = await frameTransferChunk(chunkIndex, chunk)
+        if (cancelledSenderPulls.current.has(`${requesterId}:${requestId}`) || !usePullStore.getState().files[offerId] || offer.expiresAt <= Date.now())
+          throw new Error("Offer is no longer available")
         channel.send(framedChunk)
         offset += chunk.byteLength
         chunkIndex += 1
       }
+      if (cancelledSenderPulls.current.has(`${requesterId}:${requestId}`) || !usePullStore.getState().files[offerId] || offer.expiresAt <= Date.now())
+        throw new Error("Offer is no longer available")
       channel.send(
         JSON.stringify({
           protocol: "window-pull-v1",
@@ -442,9 +499,10 @@ export const useSocket = () => {
           bytes: file.size,
         }),
       )
+      if (activeSenderTransfers.current[requestId]) activeSenderTransfers.current[requestId].sending = false
       window.setTimeout(
         () => {
-          if (activeSenderTransfers.current[requestId]) {
+          if (activeSenderTransfers.current[requestId]?.requesterId === requesterId) {
             activeSenderPulls.current.delete(requesterId)
             delete activeSenderTransfers.current[requestId]
             cancelledSenderPulls.current.delete(`${requesterId}:${requestId}`)
@@ -465,7 +523,7 @@ export const useSocket = () => {
       toast.error("Transfer interrupted", {
         description: `${file.name} could not be sent completely.`,
       })
-      sendWsMessage({
+      sendControl(requesterId, {
         type: "file-pull-decision",
         offerId,
         requestId,
@@ -480,7 +538,7 @@ export const useSocket = () => {
   }
 
   const requestFilePull = (offer: SharedFileOffer) => {
-    if (!userId) return
+    if (!userId || !usePullStore.getState().offers.some((item) => item.offerId === offer.offerId && item.ownerId === offer.ownerId)) return
     if (Object.keys(pendingPullRequests.current).length > 0) {
       toast.info("One download at a time", {
         description:
@@ -492,17 +550,22 @@ export const useSocket = () => {
     pendingPullRequests.current[offer.offerId] = requestId
     pullStore.setStatus(offer.offerId, "requesting")
     pullStore.setProgress(offer.offerId, 0)
-    sendWsMessage({
-      type: "request-file-pull",
+    if (!sendControl(offer.ownerId, {
+      type: "file-pull-request",
       offerId: offer.offerId,
       requestId,
-    })
+    })) {
+      delete pendingPullRequests.current[offer.offerId]
+      pullStore.setStatus(offer.offerId, "unavailable")
+      toast.error("Peer connection is unavailable")
+      return
+    }
     window.setTimeout(() => {
       if (
         pendingPullRequests.current[offer.offerId] === requestId &&
         usePullStore.getState().statuses[offer.offerId] === "requesting"
       ) {
-        sendWsMessage({
+        sendControl(offer.ownerId, {
           type: "cancel-file-pull",
           offerId: offer.offerId,
           requestId,
@@ -518,27 +581,26 @@ export const useSocket = () => {
   }
 
   const publishFileOffer = (offer: SharedFileOffer, file: File) => {
-    pendingOfferFiles.current[offer.offerId] = file
-    sendWsMessage({ type: "publish-file-offer", roomId: offer.roomId, offer })
-    window.setTimeout(() => {
-      if (pendingOfferFiles.current[offer.offerId]) {
-        delete pendingOfferFiles.current[offer.offerId]
-        toast.error("Offer could not be published", {
-          description: "Check the room connection and try again.",
-        })
-      }
-    }, 10_000)
+    const state = usePullStore.getState()
+    const ownOffers = state.offers.filter((item) => item.ownerId === userId && item.expiresAt > Date.now())
+    if (!userId || !isProtocolId(offer.offerId) || state.offers.some((item) => item.offerId === offer.offerId) || file.size > 50 * 1024 * 1024 || offer.ownerId !== userId || offer.roomId !== roomId || offer.expiresAt <= Date.now() ||
+      ownOffers.length >= 20 || ownOffers.reduce((sum, item) => sum + item.size, file.size) > 200 * 1024 * 1024) {
+      toast.error("Offer could not be published")
+      return
+    }
+    state.addLocalOffer(offer, file)
+    Object.keys(dataChannelMap.current).forEach((peerId) => {
+      if (isVisibleOffer(offer, peerId)) sendControl(peerId, { type: "file-offer-added", offer })
+    })
+    offerTimers.current[offer.offerId] = window.setTimeout(() => removeLocalOffer(offer.offerId, "expired"), Math.max(0, offer.expiresAt - Date.now()))
   }
 
-  const revokeFileOffer = (offerId: string) => {
-    sendWsMessage({ type: "revoke-file-offer", offerId })
-    pullStore.removeOffer(offerId)
-  }
+  const revokeFileOffer = (offerId: string) => removeLocalOffer(offerId, "revoked")
 
   const cancelFilePull = (offer: SharedFileOffer) => {
     const requestId = pendingPullRequests.current[offer.offerId]
     if (!requestId) return
-    sendWsMessage({
+    sendControl(offer.ownerId, {
       type: "cancel-file-pull",
       offerId: offer.offerId,
       requestId,
@@ -692,7 +754,7 @@ export const useSocket = () => {
     pc.ondatachannel = (event) => {
       const channel = event.channel
       // whenever a data channel is recieved from remote peer, register it
-      dataChannelMap.current[remoteUserId] = channel
+      if (channel.label === "fileTransfer") dataChannelMap.current[remoteUserId] = channel
       console.debug(
         `Data channel established with remote user ${remoteUserId}:`,
         channel,
@@ -945,7 +1007,6 @@ export const useSocket = () => {
     try {
       peerConnections.current[remoteUserId]?.close()
       delete peerConnections.current[remoteUserId]
-      delete dataChannelMap.current[remoteUserId]
 
       if (Object.keys(peerConnections.current).length === 0) {
         setStatus("Waiting for other users...")
@@ -958,7 +1019,7 @@ export const useSocket = () => {
         .getState()
         .offers.filter((offer) => offer.ownerId === remoteUserId)
         .forEach((offer) => {
-          usePullStore.getState().setStatus(offer.offerId, "unavailable")
+          usePullStore.getState().removeOffer(offer.offerId)
           delete pendingPullRequests.current[offer.offerId]
           if (pullStartTimers.current[offer.offerId])
             window.clearTimeout(pullStartTimers.current[offer.offerId])
@@ -1019,10 +1080,10 @@ export const useSocket = () => {
         }
       }, 120_000)
     }
-    const resetIncomingPull = (notifyServer: boolean) => {
+    const resetIncomingPull = (notifyPeer: boolean) => {
       if (pullingOfferId && pullRequestId) {
-        if (notifyServer)
-          sendWsMessage({
+        if (notifyPeer)
+          sendControl(remoteUserId, {
             type: "cancel-file-pull",
             offerId: pullingOfferId,
             requestId: pullRequestId,
@@ -1070,6 +1131,7 @@ export const useSocket = () => {
 
     channel.onopen = () => {
       console.log("Data channel is open:", channel.label)
+      if (channel.label === "fileTransfer") sendSnapshot(remoteUserId)
     }
 
     channel.onclose = () => {
@@ -1079,23 +1141,48 @@ export const useSocket = () => {
         clearImmediateTimer()
         releaseIncomingBytes(channel)
       }
+      if (channel.label !== "fileTransfer") return
+      if (dataChannelMap.current[remoteUserId] && channel !== dataChannelMap.current[remoteUserId]) return
+      delete dataChannelMap.current[remoteUserId]
+      for (const [requestId, transfer] of Object.entries(activeSenderTransfers.current)) {
+        if (transfer.requesterId === remoteUserId) {
+          cancelledSenderPulls.current.add(`${remoteUserId}:${requestId}`)
+          if (!transfer.sending) {
+            delete activeSenderTransfers.current[requestId]
+            cancelledSenderPulls.current.delete(`${remoteUserId}:${requestId}`)
+          }
+        }
+      }
+      activeSenderPulls.current.delete(remoteUserId)
       for (const offer of usePullStore.getState().offers) {
-        if (
-          offer.ownerId === remoteUserId &&
-          pendingPullRequests.current[offer.offerId]
-        ) {
-          pullStore.setStatus(offer.offerId, "unavailable")
-          sendWsMessage({
-            type: "cancel-file-pull",
-            offerId: offer.offerId,
-            requestId: pendingPullRequests.current[offer.offerId],
-          })
+        if (offer.ownerId === remoteUserId) {
+          pullStore.removeOffer(offer.offerId)
+          window.clearTimeout(pullStartTimers.current[offer.offerId])
+          delete pullStartTimers.current[offer.offerId]
           delete pendingPullRequests.current[offer.offerId]
         }
       }
     }
 
-    channel.onmessage = async (event) => {
+    // File chunk verification is asynchronous; preserve channel order through completion.
+    let incomingMessages = Promise.resolve()
+    channel.onmessage = (event) => {
+      if (typeof event.data === "string") {
+        try {
+          const message = JSON.parse(event.data)
+          if (message?.protocol === PULL_CONTROL_PROTOCOL) {
+            if (channel === dataChannelMap.current[remoteUserId]) handlePeerControl(message, remoteUserId)
+            return
+          }
+        } catch { /* The file message handler reports invalid metadata. */ }
+      }
+      incomingMessages = incomingMessages.then(() => channel.readyState === "open" ? handleDataMessage(event) : undefined).catch((error) => {
+        console.error("Error processing data channel message:", error)
+        channel.close()
+      })
+    }
+
+    const handleDataMessage = async (event: MessageEvent) => {
       let chunk = event.data
 
       // If data is a string, it's metadata.
@@ -1121,7 +1208,7 @@ export const useSocket = () => {
                   parsed.size / (CHUNK_SIZE - TRANSFER_CHUNK_HEADER_BYTES),
                 )
             ) {
-              const offeredMetadata = pullStore.offers.find(
+              const offeredMetadata = usePullStore.getState().offers.find(
                 (offer) => offer.offerId === parsed.offerId,
               )
               if (
@@ -1137,7 +1224,7 @@ export const useSocket = () => {
               )
                 return
               if (!reserveIncomingBytes(channel, parsed.size)) {
-                sendWsMessage({
+                sendControl(remoteUserId, {
                   type: "cancel-file-pull",
                   offerId: parsed.offerId,
                   requestId: parsed.requestId,
@@ -1194,7 +1281,7 @@ export const useSocket = () => {
                 receivedFileInfo,
                 receivedChunks,
               )
-              sendWsMessage({
+              sendControl(remoteUserId, {
                 type: "finish-file-pull",
                 offerId: pullingOfferId,
                 requestId: pullRequestId,
@@ -1469,7 +1556,7 @@ export const useSocket = () => {
       socketRef.current?.close()
       resetFileStore() // Reset file state when leaving room
       pullStore.clearPullState()
-      pendingOfferFiles.current = {}
+      clearOfferTimers()
       pendingPullRequests.current = {}
       clearPullStartTimers()
       leaveRoom()

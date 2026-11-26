@@ -321,7 +321,7 @@ export default function Room() {
             <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(20rem,0.9fr)]">
               <Card className="gap-0 py-0 overflow-hidden rounded-2xl border-border shadow-sm">
                 <CardHeader className="gap-4 sm:gap-5 border-b border-border p-4 sm:p-6">
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-muted-foreground">
                         Sharing room
@@ -348,7 +348,7 @@ export default function Room() {
                         )}
                       </CardDescription>
                     </div>
-                    <div className="flex shrink-0 flex-wrap gap-2">
+                    <div className="flex min-w-0 flex-wrap gap-2">
                       <Button
                         variant="outline"
                         className="min-h-11 gap-1.5"

@@ -57,8 +57,8 @@ export default function LandingNavbar() {
           </span>
         </a>
 
-        {/* Live Protocol Status Badge (Tablet / Large Desktop) */}
-        <div className="hidden items-center gap-2 rounded-full border border-border/80 bg-card/60 px-3.5 py-1 text-xs font-medium text-muted-foreground shadow-2xs md:flex lg:hidden xl:flex">
+        {/* Live Protocol Status Badge (Tablet) */}
+        <div className="hidden items-center gap-2 rounded-full border border-border/80 bg-card/60 px-3.5 py-1 text-xs font-medium text-muted-foreground shadow-2xs md:flex lg:hidden">
           <span className="relative flex size-2">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
             <span className="relative inline-flex size-2 rounded-full bg-success" />

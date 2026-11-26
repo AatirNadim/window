@@ -82,7 +82,7 @@ export function PullSharingPanel({
   )
 
   useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 1000)
+    const timer = window.setInterval(() => setNow(Date.now()), 5000)
     return () => window.clearInterval(timer)
   }, [])
 
@@ -124,7 +124,7 @@ export function PullSharingPanel({
           <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
             <Download size={19} />
           </span>
-          <div className="min-w-[9rem] flex-1">
+          <div className="min-w-0 flex-1 basis-[9rem]">
             <CardTitle className="text-lg">Available files</CardTitle>
             <CardDescription className="mt-1">
               Pull a file directly from a peer while they’re online.
@@ -160,14 +160,14 @@ export function PullSharingPanel({
                   <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-accent text-accent-foreground">
                     <FileIcon size={17} />
                   </span>
-                  <div className="min-w-[11rem] flex-1">
+                  <div className="min-w-0 flex-1 basis-[11rem]">
                     <p
                       className="truncate text-sm font-medium"
                       title={offer.name}
                     >
                       {offer.name}
                     </p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
+                    <p className="mt-0.5 break-words text-xs text-muted-foreground">
                       {offer.ownerName} · {formatSize(offer.size)} ·{" "}
                       {remaining < 1
                         ? "Expires in under a minute"
@@ -320,7 +320,7 @@ export function PullSharingPanel({
                         )
                       }
                     />
-                    {name}
+                    <span className="min-w-0 break-all">{name}</span>
                   </label>
                 ))
               ) : (
@@ -348,7 +348,7 @@ export function PullSharingPanel({
               exceedsRoomQuota ||
               (visibility === "selected" && activeRecipients.length === 0)
             }
-            className="min-h-11 w-full"
+            className="h-auto min-h-11 w-full whitespace-normal py-2 text-center"
           >
             <Timer size={16} />
             Make available for{" "}

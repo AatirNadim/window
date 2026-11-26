@@ -71,7 +71,7 @@ describe("Responsive layout behavior", () => {
     const statusBadge = screen.getByText("WebRTC Direct Transfer").closest("div")
     expect(statusBadge?.className).toContain("md:flex")
     expect(statusBadge?.className).toContain("lg:hidden")
-    expect(statusBadge?.className).toContain("xl:flex")
+    expect(statusBadge?.className).not.toContain("xl:flex")
 
     const menuButton = screen.getByRole("button", {
       name: "Toggle Navigation Menu",
