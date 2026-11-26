@@ -31,7 +31,7 @@ export function KeyboardShortcutsButton({ className }: KeyboardShortcutsButtonPr
       </TooltipTrigger>
       <TooltipContent side="bottom" className="flex items-center gap-1.5">
         <span>Keyboard shortcuts</span>
-        <Kbd className="bg-background text-foreground border-border/50 text-[10px] h-5 min-w-5">?</Kbd>
+        <Kbd variant="tooltip" size="sm">?</Kbd>
       </TooltipContent>
     </Tooltip>
   )

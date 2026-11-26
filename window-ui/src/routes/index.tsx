@@ -3,7 +3,6 @@ import { v4 as uuidv4 } from "uuid"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { toast } from "sonner"
 import { useUserStore } from "@/store"
-import { useTheme } from "@/components/theme-provider"
 import { useKeybindings } from "@/hooks/useKeybindings"
 import { isValidUUID } from "@/lib/utils"
 import HeroSection from "@/components/home/heroSection"
@@ -23,7 +22,6 @@ export const Route = createFileRoute("/")({
 export default function Home() {
   const navigate = useNavigate()
   const { initializeUser, roomId, setRoomId } = useUserStore()
-  const { theme, setTheme } = useTheme()
   const roomInputRef = useRef<HTMLInputElement>(null)
 
   const handleCreateRoom = () => {
@@ -96,34 +94,30 @@ export default function Home() {
       handler: handlePasteRoomId,
       allowInInput: false,
     },
-    {
-      keys: ["t", "Alt+T"],
-      handler: () => setTheme(theme === "light" ? "dark" : "light"),
-      allowInInput: false,
-    },
   ])
 
   return (
-    <div className="relative isolate min-h-svh bg-background">
+    <div className="relative isolate min-h-svh bg-background text-foreground">
       <InfiniteWindowBackground />
       <LandingNavbar />
-      <div className="relative z-10 px-4 sm:px-6 lg:px-8">
-        <HeroSection
-          roomId={roomId}
-          setRoomId={setRoomId}
-          handleCreateRoom={handleCreateRoom}
-          handleJoinRoom={handleJoinRoom}
-          inputRef={roomInputRef}
-        />
-      </div>
-      <div className="relative z-10">
+      <main className="relative z-10 flex flex-col">
+        <div className="px-4 sm:px-6 lg:px-8">
+          <HeroSection
+            roomId={roomId}
+            setRoomId={setRoomId}
+            handleCreateRoom={handleCreateRoom}
+            handleJoinRoom={handleJoinRoom}
+            inputRef={roomInputRef}
+            onPasteRoomId={handlePasteRoomId}
+          />
+        </div>
         <InteractiveDemo />
         <ModesComparison />
         <SecurityArchitecture />
         <LimitsMatrix />
         <FAQSection />
-        <LandingFooter handleCreateRoom={handleCreateRoom} />
-      </div>
+      </main>
+      <LandingFooter handleCreateRoom={handleCreateRoom} />
     </div>
   )
 }

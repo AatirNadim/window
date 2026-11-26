@@ -67,7 +67,7 @@ export default function SecurityArchitecture() {
   const reducedMotion = useReducedMotion()
 
   return (
-    <section id="architecture" className="relative w-full scroll-mt-16 sm:scroll-mt-20 border-t border-border bg-card/30 py-16 sm:py-24">
+    <section id="architecture" className="relative w-full scroll-mt-16 sm:scroll-mt-20 border-t border-border py-16 sm:py-24">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="mx-auto max-w-3xl text-center">
@@ -157,9 +157,9 @@ export default function SecurityArchitecture() {
                 <ServerOff size={20} />
               </span>
               <div>
-                <h4 className="text-base font-bold text-foreground">
+                <h3 className="text-base font-bold text-foreground">
                   Signaling Node Transparency: What passes through the server?
-                </h4>
+                </h3>
                 <p className="mt-1 max-w-3xl text-xs leading-relaxed text-muted-foreground sm:text-sm">
                   The WebSocket signaling server exists solely to broker SDP offer/answer exchanges and
                   ICE candidate negotiation so two browsers can find each other. Once the WebRTC peer

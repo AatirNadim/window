@@ -118,19 +118,19 @@ export function PullSharingPanel({
   }
 
   return (
-    <Card className="rounded-2xl border-border shadow-sm">
+    <Card className="gap-0 py-0 rounded-2xl border-border shadow-sm">
       <CardHeader className="border-b border-border p-5 sm:p-6">
         <div className="flex items-start gap-3">
           <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
             <Download size={19} />
           </span>
-          <div>
+          <div className="min-w-0">
             <CardTitle className="text-lg">Available files</CardTitle>
             <CardDescription className="mt-1">
               Pull a file directly from a peer while they’re online.
             </CardDescription>
           </div>
-          <span className="ml-auto rounded-full bg-secondary px-2.5 py-1 text-xs font-medium">
+          <span className="ml-auto shrink-0 whitespace-nowrap rounded-full bg-secondary px-2.5 py-1 text-xs font-medium">
             {incomingOffers.length} available
           </span>
         </div>
@@ -228,10 +228,10 @@ export function PullSharingPanel({
               the room. Contents are not uploaded to the server.
             </p>
           </div>
-          <label className="flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-input bg-muted/20 px-3 text-sm hover:border-primary/70">
+          <label className="flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-input bg-muted/20 px-3 text-sm hover:border-primary/70 focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
             <Plus size={16} />
             <span>Choose up to 5 files (50 MB each, 200 MB active total)</span>
-            <Kbd className="text-[10px] h-5 min-w-5">O</Kbd>
+            <Kbd size="sm">O</Kbd>
             <input
               id="offer-file-input"
               type="file"
@@ -306,10 +306,11 @@ export function PullSharingPanel({
                 peers.map(([id, name]) => (
                   <label
                     key={id}
-                    className="flex min-h-9 items-center gap-2 text-sm"
+                    className="flex min-h-9 cursor-pointer items-center gap-2 text-sm"
                   >
                     <input
                       type="checkbox"
+                      className="size-4 cursor-pointer rounded accent-primary"
                       checked={recipients.includes(id)}
                       onChange={(event) =>
                         setRecipients((current) =>
@@ -377,7 +378,7 @@ export function PullSharingPanel({
                 <Button
                   size="icon"
                   variant="ghost"
-                  className="size-11 text-destructive"
+                  className="size-11 text-destructive hover:text-destructive"
                   onClick={() => onRevoke(offer.offerId)}
                   aria-label={`Stop sharing ${offer.name}`}
                 >

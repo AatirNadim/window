@@ -26,7 +26,6 @@ import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { KeyboardShortcutsButton } from "@/components/keybindings/KeyboardShortcutsButton"
 import { Kbd } from "@/components/keybindings/Kbd"
-import { useTheme } from "@/components/theme-provider"
 import { useFileStore } from "@/store/fileStore"
 import { useFile } from "@/store/hooks/fileHook"
 import { useSocket } from "@/store/hooks/socketHook"
@@ -63,7 +62,6 @@ export default function Room() {
   const navigate = useNavigate()
   const { userId, roomId, userName, remoteUsers, setUserId, setRoomId } =
     useUserStore()
-  const { theme, setTheme } = useTheme()
   const [peersSheetOpen, setPeersSheetOpen] = useState(false)
   const {
     filesToBeSent,
@@ -257,11 +255,6 @@ export default function Room() {
       handler: () => navigate({ to: "/" }),
       allowInInput: false,
     },
-    {
-      keys: ["t", "Alt+T"],
-      handler: () => setTheme(theme === "light" ? "dark" : "light"),
-      allowInInput: false,
-    },
   ])
 
   return (
@@ -284,7 +277,7 @@ export default function Room() {
           >
             <ArrowLeft size={17} />
             <span>Home</span>
-            <Kbd className="hidden sm:inline-flex text-[10px] h-5 min-w-5">H</Kbd>
+            <Kbd size="sm" className="hidden sm:inline-flex">H</Kbd>
           </Button>
           <div className="flex items-center gap-2">
             <div className="lg:hidden">
@@ -292,7 +285,7 @@ export default function Room() {
                 <SheetTrigger asChild>
                   <Button
                     variant="outline"
-                    className="min-h-11 gap-2"
+                    className="min-h-11 gap-2 rounded-lg bg-card"
                     aria-label={`Show ${remoteUserCount} connected peers`}
                   >
                     <Users size={17} />
@@ -300,7 +293,7 @@ export default function Room() {
                     <span className="rounded-full bg-secondary px-2 py-0.5 text-xs">
                       {remoteUserCount}
                     </span>
-                    <Kbd className="text-[10px] h-5 min-w-5">P</Kbd>
+                    <Kbd size="sm">P</Kbd>
                   </Button>
                 </SheetTrigger>
                 <SheetContent side="left" className="w-[min(22rem,90vw)] p-3">
@@ -322,8 +315,8 @@ export default function Room() {
             className="mx-auto w-full max-w-6xl"
           >
             <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,0.9fr)]">
-              <Card className="overflow-hidden rounded-2xl border-border shadow-sm">
-                <CardHeader className="gap-5 border-b border-border p-5 sm:p-7">
+              <Card className="gap-0 py-0 overflow-hidden rounded-2xl border-border shadow-sm">
+                <CardHeader className="gap-5 border-b border-border p-5 sm:p-6">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-muted-foreground">
@@ -359,7 +352,7 @@ export default function Room() {
                       >
                         <Copy size={15} />
                         <span>Copy ID</span>
-                        <Kbd className="hidden md:inline-flex text-[10px] h-5 min-w-5">R</Kbd>
+                        <Kbd size="sm" className="hidden md:inline-flex">R</Kbd>
                       </Button>
                       <Button
                         variant="outline"
@@ -370,7 +363,7 @@ export default function Room() {
                       >
                         <Link2 size={15} />
                         <span>Copy invite</span>
-                        <Kbd className="hidden md:inline-flex text-[10px] h-5 min-w-5">I</Kbd>
+                        <Kbd size="sm" className="hidden md:inline-flex">I</Kbd>
                       </Button>
                       <Button
                         variant="ghost"
@@ -378,7 +371,7 @@ export default function Room() {
                         onClick={() => navigate({ to: "/" })}
                       >
                         <span>Leave</span>
-                        <Kbd className="hidden md:inline-flex text-[10px] h-5 min-w-5">L</Kbd>
+                        <Kbd size="sm" className="hidden md:inline-flex">L</Kbd>
                       </Button>
                     </div>
                   </div>
@@ -399,7 +392,7 @@ export default function Room() {
                   </div>
                 </CardHeader>
 
-                <CardContent className="space-y-5 p-5 sm:p-7">
+                <CardContent className="space-y-5 p-5 sm:p-6">
                   <div>
                     <h2 className="text-base font-semibold">Send files</h2>
                     <p className="mt-1 text-sm leading-5 text-muted-foreground">
@@ -428,7 +421,7 @@ export default function Room() {
                             ? `${filesToBeSent.length} ${filesToBeSent.length === 1 ? "file" : "files"}`
                             : "files"}
                         </span>
-                        <Kbd className="ml-1 text-[10px] h-5 min-w-5 bg-primary-foreground/20 text-primary-foreground border-primary-foreground/30">
+                        <Kbd variant="primary" size="sm" className="ml-1">
                           S
                         </Kbd>
                       </>

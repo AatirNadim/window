@@ -94,7 +94,7 @@ const COMPARISON_ROWS: MatrixRow[] = [
 
 export default function LimitsMatrix() {
   return (
-    <section id="specs" className="relative w-full scroll-mt-16 sm:scroll-mt-20 border-t border-border bg-background py-16 sm:py-24">
+    <section id="specs" className="relative w-full scroll-mt-16 sm:scroll-mt-20 border-t border-border py-16 sm:py-24">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="mx-auto max-w-3xl text-center">
@@ -208,9 +208,9 @@ export default function LimitsMatrix() {
               <HardDrive size={20} />
             </span>
             <div className="space-y-2">
-              <h4 className="text-base font-bold text-foreground sm:text-lg">
+              <h3 className="text-base font-bold text-foreground sm:text-lg">
                 Why is Window capped at 50 MB per file?
-              </h4>
+              </h3>
               <p className="text-xs leading-relaxed text-muted-foreground sm:text-sm">
                 WebRTC DataChannels operate with non-streamable memory buffers in many mobile and
                 desktop browsers. Slicing files larger than 50 MB into RAM-allocated ArrayBuffers

@@ -68,7 +68,7 @@ export default function FAQSection() {
   }
 
   return (
-    <section id="faq" className="relative w-full scroll-mt-16 sm:scroll-mt-20 border-t border-border bg-card/30 py-16 sm:py-24">
+    <section id="faq" className="relative w-full scroll-mt-16 sm:scroll-mt-20 border-t border-border py-16 sm:py-24">
       <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="text-center">

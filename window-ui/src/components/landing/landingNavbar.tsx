@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Radio, Github, Menu, X, ArrowUpRight } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { KeyboardShortcutsButton } from "@/components/keybindings/KeyboardShortcutsButton"
@@ -13,6 +13,15 @@ const NAV_LINKS = [
 
 export default function LandingNavbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMobileMenuOpen(false)
+    }
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [mobileMenuOpen])
 
   const handleScrollTo = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     e.preventDefault()
@@ -51,8 +60,8 @@ export default function LandingNavbar() {
         {/* Live Protocol Status Badge (Tablet / Desktop) */}
         <div className="hidden items-center gap-2 rounded-full border border-border/80 bg-card/60 px-3.5 py-1 text-xs font-medium text-muted-foreground shadow-2xs md:flex">
           <span className="relative flex size-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
+            <span className="relative inline-flex size-2 rounded-full bg-success" />
           </span>
           <span className="text-foreground">WebRTC Direct Transfer</span>
           <span className="text-border">•</span>
@@ -113,19 +122,19 @@ export default function LandingNavbar() {
         <div className="border-b border-border bg-card px-4 py-4 shadow-lg sm:px-6 lg:hidden animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="mb-3 flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-xs font-medium text-muted-foreground">
             <span className="relative flex size-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
+              <span className="relative inline-flex size-2 rounded-full bg-success" />
             </span>
             <span>WebRTC Direct • Zero Cloud Storage</span>
           </div>
 
-          <nav className="flex flex-col space-y-2" aria-label="Mobile Navigation">
+          <nav className="flex flex-col space-y-1" aria-label="Mobile Navigation">
             {NAV_LINKS.map((link) => (
               <a
                 key={link.href}
                 href={link.href}
                 onClick={(e) => handleScrollTo(e, link.href)}
-                className="rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-secondary"
+                className="flex min-h-11 items-center rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-secondary"
               >
                 {link.label}
               </a>
@@ -135,7 +144,7 @@ export default function LandingNavbar() {
               href="https://github.com/AatirNadim/window"
               target="_blank"
               rel="noreferrer noopener"
-              className="flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-secondary"
+              className="flex min-h-11 items-center justify-between rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-secondary"
             >
               <span className="flex items-center gap-2">
                 <Github size={16} /> GitHub Repository

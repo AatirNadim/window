@@ -80,16 +80,16 @@ export function KeybindingCheatSheet() {
 
   return (
     <Dialog open={isCheatSheetOpen} onOpenChange={(open) => !open && closeCheatSheet()}>
-      <DialogContent className="max-w-2xl max-h-[88vh] flex flex-col p-0 gap-0 overflow-hidden sm:max-w-2xl">
-        <DialogHeader className="p-5 pb-3 border-b border-border bg-muted/20">
-          <div className="flex items-center gap-2.5">
-            <span className="grid size-9 place-items-center rounded-xl bg-primary text-primary-foreground shadow-xs">
+      <DialogContent className="w-full max-w-[min(42rem,calc(100%-1.5rem))] sm:max-w-[min(42rem,calc(100%-2rem))] h-[min(640px,calc(100dvh-2rem))] flex flex-col p-0 gap-0 overflow-hidden">
+        <DialogHeader className="shrink-0 p-4 pb-3 sm:p-5 sm:pb-3 border-b border-border bg-muted/20 text-left">
+          <div className="flex items-start sm:items-center gap-2.5 pr-8">
+            <span className="grid size-8 sm:size-9 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground shadow-xs">
               <Keyboard size={18} />
             </span>
-            <div>
-              <DialogTitle className="text-xl font-bold flex items-center gap-2">
-                Keyboard Shortcuts Cheat Sheet
-                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-success bg-success/10 px-2 py-0.5 rounded-full">
+            <div className="min-w-0">
+              <DialogTitle className="text-base sm:text-xl font-bold flex flex-wrap items-center gap-x-2 gap-y-1">
+                <span>Keyboard Shortcuts Cheat Sheet</span>
+                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-success bg-success/10 px-2 py-0.5 rounded-full shrink-0">
                   <ShieldCheck size={12} /> Browser Safe
                 </span>
               </DialogTitle>
@@ -123,7 +123,7 @@ export function KeybindingCheatSheet() {
           </div>
 
           {/* Category filter pills */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pt-2 pb-0.5 no-scrollbar text-xs">
+          <div className="flex flex-wrap items-center gap-1.5 pt-2 pb-0.5 text-xs">
             {CATEGORIES.map((cat) => {
               const count = categoryCounts[cat] || 0
               const isSelected = selectedCategory === cat
@@ -141,7 +141,7 @@ export function KeybindingCheatSheet() {
                   {cat}
                   <span
                     className={cn(
-                      "px-1.5 py-0.2 rounded-full text-[10px]",
+                      "px-1.5 py-0.5 rounded-full text-[10px]",
                       isSelected
                         ? "bg-primary-foreground/20 text-primary-foreground"
                         : "bg-background/60 text-muted-foreground"
@@ -156,9 +156,9 @@ export function KeybindingCheatSheet() {
         </DialogHeader>
 
         {/* Shortcuts list */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-6 max-h-[50vh]">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 sm:p-5 space-y-5 sm:space-y-6">
           {filteredRecords.length === 0 ? (
-            <div className="py-12 text-center text-muted-foreground">
+            <div className="h-full min-h-[160px] flex flex-col items-center justify-center py-8 text-center text-muted-foreground">
               <Command size={28} className="mx-auto mb-2 opacity-40" />
               <p className="text-sm font-medium">No shortcuts match &quot;{searchQuery}&quot;</p>
               <p className="text-xs mt-1">Try searching for &quot;send&quot;, &quot;room&quot;, or &quot;theme&quot;</p>
@@ -179,7 +179,7 @@ export function KeybindingCheatSheet() {
               <section key={category} className="space-y-2.5" aria-labelledby={`cat-${category}`}>
                 <h3
                   id={`cat-${category}`}
-                  className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-between"
+                  className="font-mono text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center justify-between"
                 >
                   <span>{category}</span>
                   <span className="text-[11px] font-normal lowercase">
@@ -194,7 +194,7 @@ export function KeybindingCheatSheet() {
                       className="flex flex-col sm:flex-row sm:items-center justify-between p-3 gap-2 sm:gap-4 hover:bg-muted/30 transition-colors"
                     >
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-sm font-semibold text-foreground">
                             {record.title}
                           </span>
@@ -213,7 +213,7 @@ export function KeybindingCheatSheet() {
                       </div>
 
                       {/* Key combinations representation */}
-                      <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
+                      <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-start sm:justify-end">
                         {record.combos.map((combo, idx) => (
                           <span key={combo.display} className="flex items-center gap-1">
                             {idx > 0 && <span className="text-xs text-muted-foreground/60 mr-1">or</span>}
@@ -239,7 +239,7 @@ export function KeybindingCheatSheet() {
         </div>
 
         {/* Footer with safety guarantee */}
-        <div className="border-t border-border bg-muted/30 p-3.5 px-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-muted-foreground">
+        <div className="shrink-0 border-t border-border bg-muted/30 px-4 py-2.5 sm:px-5 sm:py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 text-xs text-muted-foreground">
           <div className="flex items-start sm:items-center gap-2">
             <CheckCircle2 size={15} className="text-success shrink-0 mt-0.5 sm:mt-0" />
             <span>

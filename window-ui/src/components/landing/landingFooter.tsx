@@ -16,10 +16,10 @@ const TECH_PILLS = [
 
 export default function LandingFooter({ handleCreateRoom }: LandingFooterProps) {
   return (
-    <footer className="relative w-full border-t border-border bg-background">
+    <footer className="relative z-10 w-full border-t border-border">
       {/* Bottom CTA Card Container */}
       <div className="mx-auto max-w-6xl px-4 pt-16 pb-12 sm:px-6 lg:px-8">
-        <div className="relative overflow-hidden rounded-3xl border border-border bg-card p-8 sm:p-12 shadow-sm">
+        <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-8 sm:p-12 shadow-sm">
           {/* Architectural blueprint coordinate & concentric ring accent */}
           <div
             aria-hidden="true"
@@ -36,13 +36,13 @@ export default function LandingFooter({ handleCreateRoom }: LandingFooterProps) 
 
           <div className="relative z-10 flex flex-col items-start justify-between gap-8 lg:flex-row lg:items-center">
             <div className="max-w-2xl">
-              <span className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-3 py-1 font-mono text-xs font-semibold tracking-wider text-primary">
+              <span className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-3 py-1 font-mono text-xs font-semibold tracking-widest text-primary">
                 <Sparkles size={12} className="text-primary" />
                 <span>START TRANSFERRING IN SECONDS</span>
               </span>
-              <h3 className="mt-4 text-2xl font-bold tracking-tight text-foreground sm:text-3xl lg:text-4xl">
+              <h2 className="mt-4 text-2xl font-bold tracking-tight text-foreground sm:text-3xl lg:text-4xl">
                 Ready to send files directly?
-              </h3>
+              </h2>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground sm:text-base">
                 Create a private room in one click. Share the room link with your peer. No signup, no
                 cloud upload, and zero traces left behind.
@@ -52,7 +52,7 @@ export default function LandingFooter({ handleCreateRoom }: LandingFooterProps) 
             <div className="flex flex-wrap items-center gap-3">
               <Button
                 onClick={handleCreateRoom}
-                className="group h-12 rounded-xl bg-primary px-6 text-sm font-semibold text-primary-foreground shadow-xs hover:opacity-95"
+                className="group h-12 rounded-lg bg-primary px-6 text-sm font-semibold text-primary-foreground shadow-xs hover:opacity-95"
               >
                 <Plus size={18} className="transition-transform group-hover:rotate-90" />
                 <span>Create instant room</span>
@@ -63,7 +63,7 @@ export default function LandingFooter({ handleCreateRoom }: LandingFooterProps) 
                 href="https://github.com/AatirNadim/window"
                 target="_blank"
                 rel="noreferrer noopener"
-                className="inline-flex h-12 items-center gap-2 rounded-xl border border-border bg-card px-5 text-sm font-semibold text-foreground transition-colors hover:bg-secondary"
+                className="inline-flex h-12 items-center gap-2 rounded-lg border border-border bg-card px-5 text-sm font-semibold text-foreground transition-colors hover:bg-secondary"
               >
                 <Github size={18} />
                 <span>GitHub Source</span>

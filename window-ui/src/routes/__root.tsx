@@ -8,7 +8,7 @@ import { useTheme } from "@/components/theme-provider"
 function RootComponent() {
   const { toggleCheatSheet, closeCheatSheet, isCheatSheetOpen } =
     useKeybindingStore()
-  const { theme, setTheme } = useTheme()
+  const { resolvedTheme, setTheme } = useTheme()
 
   useKeybindings([
     {
@@ -31,8 +31,8 @@ function RootComponent() {
       allowInInput: true,
     },
     {
-      keys: ["Alt+T"],
-      handler: () => setTheme(theme === "light" ? "dark" : "light"),
+      keys: ["t", "Alt+T"],
+      handler: () => setTheme(resolvedTheme === "light" ? "dark" : "light"),
       allowInInput: false,
     },
   ])

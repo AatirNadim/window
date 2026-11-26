@@ -303,20 +303,18 @@ export const useSocket = () => {
         break
       }
 
-      case "user-left":
+      case "user-left": {
         console.debug(
           `Remote user ${message.userId} has left the room. Peer connection closed.`,
         )
 
-        toast.info("Remote User Left", {
-          description: `User with ID ${message.userId} has left the room.`,
-        })
-
+        const leavingUserName = remoteUsers[message.userId] || "A peer"
         handleRemoteUserLeft(message.userId)
-        toast.error("User Left", {
-          description: "The other user has left the room.",
+        toast.info("Peer left room", {
+          description: `${leavingUserName} has left the room.`,
         })
         break
+      }
 
       case "error":
         toast.error("Error", {

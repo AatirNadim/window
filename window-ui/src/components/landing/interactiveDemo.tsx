@@ -140,7 +140,7 @@ export default function InteractiveDemo() {
   const FileIcon = selectedFile.icon
 
   return (
-    <section id="how-it-works" className="relative w-full scroll-mt-16 sm:scroll-mt-20 border-t border-border bg-card/40 py-16 sm:py-24">
+    <section id="how-it-works" className="relative w-full scroll-mt-16 sm:scroll-mt-20 border-t border-border py-16 sm:py-24">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="mx-auto max-w-2xl text-center">
@@ -163,9 +163,9 @@ export default function InteractiveDemo() {
           <div className="grid border-b border-border bg-secondary/20 p-4 sm:p-6 lg:grid-cols-2 lg:gap-8">
             {/* File Selector */}
             <div className="space-y-2">
-              <label className="font-mono text-xs font-bold uppercase tracking-wider text-muted-foreground">
+              <p className="font-mono text-xs font-bold uppercase tracking-wider text-muted-foreground">
                 1. Choose sample file payload
-              </label>
+              </p>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                 {SAMPLE_FILES.map((file) => {
                   const Icon = file.icon
@@ -205,9 +205,9 @@ export default function InteractiveDemo() {
 
             {/* Transfer Mode Toggle */}
             <div className="mt-4 space-y-2 lg:mt-0">
-              <label className="font-mono text-xs font-bold uppercase tracking-wider text-muted-foreground">
+              <p className="font-mono text-xs font-bold uppercase tracking-wider text-muted-foreground">
                 2. Select Transfer Mode
-              </label>
+              </p>
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
@@ -368,7 +368,14 @@ export default function InteractiveDemo() {
                 </div>
 
                 {/* Custom Progress Bar */}
-                <div className="relative h-3 w-full overflow-hidden rounded-full border border-border bg-secondary/50">
+                <div
+                  role="progressbar"
+                  aria-label="Simulated transfer progress"
+                  aria-valuenow={progress}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  className="relative h-3 w-full overflow-hidden rounded-full border border-border bg-secondary/50"
+                >
                   <motion.div
                     className="h-full bg-primary"
                     style={{ width: `${progress}%` }}
@@ -406,7 +413,7 @@ export default function InteractiveDemo() {
                 <div className="mt-6 rounded-xl border border-success/30 bg-success/10 p-4 animate-in fade-in zoom-in-95 duration-200">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="grid size-9 shrink-0 place-items-center rounded-lg bg-success text-card">
+                      <div className="grid size-9 shrink-0 place-items-center rounded-lg bg-success text-primary-foreground">
                         <CheckCircle2 size={20} />
                       </div>
                       <div>
@@ -456,7 +463,7 @@ export default function InteractiveDemo() {
                   <Button
                     variant="outline"
                     onClick={resetSimulation}
-                    className="h-10 rounded-xl border-border bg-card text-xs font-semibold"
+                    className="h-10 rounded-lg border-border bg-card text-xs font-semibold"
                   >
                     <RotateCcw size={14} /> Reset
                   </Button>
@@ -465,7 +472,7 @@ export default function InteractiveDemo() {
                 <Button
                   onClick={startSimulation}
                   disabled={status === "streaming" || status === "verifying"}
-                  className="h-10 rounded-xl bg-primary px-5 text-xs font-semibold text-primary-foreground shadow-xs hover:opacity-95"
+                  className="h-10 rounded-lg bg-primary px-5 text-xs font-semibold text-primary-foreground shadow-xs hover:opacity-95"
                 >
                   <Play size={14} />
                   {status === "completed" ? "Simulate Again" : "Simulate Direct P2P Transfer"}

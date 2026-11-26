@@ -62,4 +62,20 @@ describe("KeybindingCheatSheet component", () => {
     expect(screen.getByText("Create new room")).toBeDefined()
     expect(screen.queryByText("Send staged files")).toBeNull()
   })
+
+  it("uses fixed responsive dimensions and a scrollable list container", () => {
+    useKeybindingStore.getState().openCheatSheet()
+    render(<KeybindingCheatSheet />)
+
+    const dialog = screen.getByRole("dialog")
+    expect(dialog.className).toContain("h-[min(640px,calc(100dvh-2rem))]")
+    expect(dialog.className).toContain("max-w-[min(42rem,calc(100%-1.5rem))]")
+    expect(dialog.className).toContain("overflow-hidden")
+
+    const scrollArea = dialog.querySelector(".overflow-y-auto")
+    expect(scrollArea).not.toBeNull()
+    expect(scrollArea?.className).toContain("flex-1")
+    expect(scrollArea?.className).toContain("min-h-0")
+    expect(scrollArea?.className).not.toContain("max-h-[50vh]")
+  })
 })
