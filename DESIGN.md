@@ -22,6 +22,8 @@ Window replaces the traditional "upload to a third-party cloud, wait, copy link,
 
 ## 2. Color System & Semantic Tokens
 
+> **Current palette:** The UI now uses warm cream `#EFE8DD`, charcoal `#303841`, teal `#76ABAE`, and orange `#FF5722`. Light mode favors a pale teal background, cream surfaces, and charcoal text; dark mode favors charcoal surfaces and cream text. Teal supports secondary states and orange highlights primary room creation actions and small accents. The token values in `window-ui/src/styles.css` are authoritative; the historical palette below is superseded.
+
 Window adheres strictly to the **60-30-10 distribution rule**, rejecting generic AI clichés (such as indigo/purple neon gradients and glowing backdrop-blur orbs) in favor of crisp, high-contrast slate surfaces, tactile borders, and signature blush/mint accents.
 
 ### Color Tokens & Palette
