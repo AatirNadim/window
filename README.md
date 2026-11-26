@@ -60,27 +60,24 @@ sequenceDiagram
     participant A as File owner browser
     participant S as Signaling server
     participant B as Recipient browser
-    A->>S: Publish offer metadata and audience
-    S-->>B: Show offer to authorized room members
-    B->>S: Request download
-    S-->>A: Forward request
-    A->>S: Accept automatically if file and peer are available
-    S-->>B: Transfer can start
+    A->>B: Share eligible offer metadata over WebRTC
+    B->>A: Request download over WebRTC
+    A-->>B: Accept if file and peer are eligible
     A->>B: Send file chunks over WebRTC
-    B-->>A: Confirm completion
-    Note over A,S: Owner must stay online - offer expires or can be revoked
-    Note over S: File bytes do not pass through the server
+    B-->>A: Confirm completion over WebRTC
+    Note over A,B: Owner must stay online; offer expires or can be revoked
+    Note over S: The server only handles room membership and signaling
 ```
 
-Choose **Available files** to publish up to five files per action. Offers are visible to everyone in the room or only selected peers. The owner’s browser keeps each offered `File` in memory; the server holds only offer metadata. Downloads start automatically when the owner is online and the peer connection is ready. A sender can have at most three active pull transfers. A recipient can have one pull request or download in progress at a time.
+Choose **Available files** to publish up to five files per action. Offers are visible to everyone in the room or only selected peers. The owner’s browser keeps each offered `File` in memory; offer metadata is shared directly with eligible peers. Downloads start automatically when the owner is online and the peer connection is ready. A sender can have at most three active pull transfers. A recipient can have one pull request or download in progress at a time.
 
-Offers expire after the selected 5, 10, 15, or 60 minutes, and can be revoked sooner. They are removed when the owner leaves. Each offered file is limited to 50 MB; active offers are limited to 20 per owner and 200 MB total. Offers and file contents are not persisted across server or browser restarts.
+Offers expire after the selected 5, 10, 15, or 60 minutes, and can be revoked sooner. They are removed when the owner leaves. Each offered file is limited to 50 MB; active offers are limited to 20 per owner and 200 MB total. Offers and file contents are not persisted across browser restarts.
 
 ### Connection and signaling flow
 
 The Node.js server acts as a broker to help peers find each other. It does not touch the file data.
 
-Pull-based offers keep file contents in the sender's active browser session. The signaling server stores only temporary offer metadata and access rules; it does not receive file contents. Recipients can pull an offered file while the sender is online and before its expiry.
+Pull-based offers keep file contents in the sender's active browser session. The hosting peer shares offer metadata and enforces access rules over the peer connection; the signaling server receives neither offer metadata nor file contents. When a data channel opens, each peer sends its current eligible offers to the other peer. Recipients can pull an offered file while the sender is online and before its expiry.
 
 For networks that block direct peer connections, configure a TURN service on the signaling server. Set `TURN_URLS` to a comma-separated list of TURN URLs (for example, `turn:turn.example.com:3478?transport=udp,turns:turn.example.com:5349?transport=tcp`) and `TURN_SHARED_SECRET` to the TURN provider's shared secret. The `/ice-servers` endpoint generates time-limited (one hour) REST credentials for clients. Without both settings, clients continue to use STUN only. The TURN service itself must be provisioned separately; relay traffic may incur provider costs.
 
@@ -116,19 +113,19 @@ The signaling server routes room membership and WebRTC setup messages. Once a pe
 
 - **Chunking and integrity:** Files are read in chunks of up to 64 KB, with 36 bytes of framing per chunk for the sequence number and SHA-256 checksum. Receivers check chunk order, checksum, declared file size, and completion before downloading.
 - **Backpressure:** A sender pauses when a data-channel buffer grows beyond 10 MB, then resumes when it drains. A 30-second stalled buffer can interrupt a transfer.
-- **Completion:** Push waits for a receiver confirmation and times out if it does not arrive within two minutes. Pull sends a completion message through the signaling server after the recipient validates the transfer.
+- **Completion:** Push waits for a receiver confirmation and times out if it does not arrive within two minutes. Pull sends a completion message over the data channel after the recipient validates the transfer.
 - **Browser memory:** Incoming chunks are assembled into a browser `Blob` before the download begins. Keep available memory in mind for large files.
 
 ### Session management and cleanup
 
 - The anonymous user ID, display name, and identity proof are stored in tab-scoped `sessionStorage`, so a page reload can reuse the identity.
-- Leaving the room or closing the tab closes peer connections and the signaling socket. The server removes the member, their offers, and related pending pulls.
+- Leaving the room or closing the tab closes peer connections and the signaling socket. The server removes the member; peers discard that member’s offers and transfers when the connection closes.
 - Navigating away triggers a browser leave confirmation. Room IDs and invite URLs contain the room UUID; room routes are excluded from search indexing.
 
 ### Privacy and server state
 
 - File bytes are sent over WebRTC data channels and are not sent to the signaling server. WebRTC data channels use DTLS encryption between peers.
-- The signaling server does receive room IDs, display names, file offer metadata (name, type, size, audience, and expiry), and WebRTC connection-signaling data. It keeps room membership, offers, pull requests, and identity proofs in process memory; these are not a durable file store.
+- The signaling server receives room IDs, display names, and WebRTC connection-signaling data. It keeps room membership and identity proofs in process memory. File offers and pull requests travel between peers over WebRTC.
 - The server issues a random identity proof to a tab and checks it when that identity reconnects. This prevents another connection from claiming an already-known identity; it does not authenticate people or protect a room from someone who has its ID.
 - Anyone with a room ID can attempt to join until the room reaches six participants. Rooms have no password or account-based access control. Use selected-recipient offers for narrower file visibility, and only share room links with intended participants.
 - Direct peer connections depend on both networks. STUN is used by default; TURN can relay WebRTC traffic when a direct path cannot be established. A TURN provider may see relayed traffic and may charge for it.

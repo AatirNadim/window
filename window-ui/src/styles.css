@@ -5,6 +5,7 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
+  color-scheme: light;
   --radius: 0.75rem;
   --background: #f6f8f8;
   --foreground: #131b2b;
@@ -42,7 +43,7 @@
   --sidebar-accent-foreground: #131b2b;
   --sidebar-border: #d1dee2;
   --sidebar-ring: #5b91a3;
-  --window-grid-line: color-mix(in srgb, #2f4a63 2%, transparent);
+  --window-grid-line: color-mix(in srgb, #2f4a63 6%, transparent);
   --window-cell-ink: #131b2b;
   --window-cell-blue: #2f4a63;
   --window-cell-teal: #5b91a3;
@@ -56,6 +57,7 @@
 }
 
 .dark {
+  color-scheme: dark;
   --background: #131b2b;
   --foreground: #f1f6f5;
   --card: #1c293b;
@@ -90,7 +92,7 @@
   --sidebar-accent-foreground: #cfeae0;
   --sidebar-border: #5b91a3;
   --sidebar-ring: #cfeae0;
-  --window-grid-line: color-mix(in srgb, #cfeae0 2%, transparent);
+  --window-grid-line: color-mix(in srgb, #cfeae0 6%, transparent);
 }
 
 .room-dotted-background {

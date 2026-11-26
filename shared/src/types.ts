@@ -34,20 +34,7 @@ export type WebSocketMessage =
   | UserLeftMessage
   | ErrorMessage
   | RoomFullMessage
-  | PublishFileOfferMessage
-  | FileOfferSnapshotMessage
-  | FileOfferAddedMessage
-  | RevokeFileOfferMessage
-  | FileOfferRemovedMessage
-  | RequestFilePullMessage
-  | FilePullRequestMessage
-  | FilePullRejectedMessage
-  | FilePullDecisionMessage
-  | FinishFilePullMessage
-  | IdentityAcceptedMessage
-  | CancelFilePullMessage
-  | FilePullCancelledMessage
-  | FilePullFinishedMessage;
+  | IdentityAcceptedMessage;
 
 // Pull-sharing offers contain metadata only. File bytes stay on peer data channels.
 export interface SharedFileOffer {

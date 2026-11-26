@@ -10,6 +10,7 @@ import { File as FileIcon, FileUp, Trash2, X } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
+import { Kbd } from "@/components/keybindings/Kbd"
 
 type FileUploadProps = { isConnected: boolean }
 
@@ -25,7 +26,13 @@ const FileUpload = ({ isConnected }: FileUploadProps) => {
       filesToBeSent.length,
     )
     result.errors.forEach((error) => toast.error(error))
-    if (result.files.length > 0) addFiles(result.files)
+    if (result.files.length > 0) {
+      const previousCount = useFileStore.getState().filesToBeSent.length
+      addFiles(result.files)
+      const added = useFileStore.getState().filesToBeSent.length - previousCount
+      if (added) toast.success(`${added} ${added === 1 ? "file" : "files"} selected`)
+      if (added < result.files.length) toast.info("Duplicate filenames were skipped")
+    }
   }
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -65,8 +72,9 @@ const FileUpload = ({ isConnected }: FileUploadProps) => {
           <span className="mx-auto grid size-11 place-items-center rounded-xl bg-background text-primary">
             <FileUp size={22} />
           </span>
-          <p className="mt-3 text-sm font-semibold">
-            Drop files here or browse
+          <p className="mt-3 text-sm font-semibold flex items-center justify-center gap-1.5 flex-wrap">
+            <span>Drop files here or browse</span>
+            <Kbd size="sm" className="hidden sm:inline-flex">U</Kbd>
           </p>
           <p className="mt-1 text-sm text-muted-foreground">
             Up to {MAX_FILES_TO_SEND_TOGETHER} files ·{" "}
@@ -100,12 +108,16 @@ const FileUpload = ({ isConnected }: FileUploadProps) => {
               <Button
                 variant="ghost"
                 size="sm"
-                className="min-h-11 text-destructive hover:text-destructive"
-                onClick={clearFilesToBeSent}
+                className="min-h-11 text-destructive hover:text-destructive gap-1.5"
+                onClick={() => {
+                  clearFilesToBeSent()
+                  toast.info("Cleared selected files")
+                }}
                 disabled={isSending}
               >
                 <Trash2 size={15} />
-                Clear all
+                <span>Clear all</span>
+                <Kbd size="sm" className="hidden sm:inline-flex">X</Kbd>
               </Button>
             </div>
             <ul
@@ -131,7 +143,10 @@ const FileUpload = ({ isConnected }: FileUploadProps) => {
                     variant="ghost"
                     size="icon"
                     className="size-11 shrink-0"
-                    onClick={() => removeFile(file.name)}
+                    onClick={() => {
+                      removeFile(file.name)
+                      toast.info("File removed from selection", { description: file.name })
+                    }}
                     disabled={isSending}
                     aria-label={`Remove ${file.name}`}
                   >

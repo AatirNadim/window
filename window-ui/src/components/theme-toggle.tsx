@@ -5,8 +5,8 @@ import { useTheme } from "./theme-provider"
 import { Button } from "@/components/ui/button"
 
 export function ThemeToggle() {
-  const { theme, setTheme } = useTheme()
-  const isDark = theme === "dark"
+  const { resolvedTheme, setTheme } = useTheme()
+  const isDark = resolvedTheme === "dark"
 
   return (
     <Button
@@ -15,7 +15,7 @@ export function ThemeToggle() {
       aria-label={`Switch to ${isDark ? "light" : "dark"} theme`}
       title={`Switch to ${isDark ? "light" : "dark"} theme`}
       onClick={() => {
-        setTheme(theme === "light" ? "dark" : "light")
+        setTheme(isDark ? "light" : "dark")
       }}
       className="relative size-11 rounded-lg bg-card text-foreground transition-colors"
     >

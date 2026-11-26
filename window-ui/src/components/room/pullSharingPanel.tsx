@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
+import { toast } from "sonner"
 import {
   Download,
   File as FileIcon,
@@ -19,13 +20,14 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { usePullStore } from "@/store/pullStore"
+import { Kbd } from "@/components/keybindings/Kbd"
 
 interface Props {
   roomId: string
   userId: string
   userName: string
   remoteUsers: Record<string, string>
-  onPublish: (offer: SharedFileOffer, file: File) => void
+  onPublish: (offer: SharedFileOffer, file: File) => boolean
   onPull: (offer: SharedFileOffer) => void
   onCancel: (offer: SharedFileOffer) => void
   onRevoke: (offerId: string) => void
@@ -81,7 +83,7 @@ export function PullSharingPanel({
   )
 
   useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 1000)
+    const timer = window.setInterval(() => setNow(Date.now()), 5000)
     return () => window.clearInterval(timer)
   }, [])
 
@@ -95,6 +97,7 @@ export function PullSharingPanel({
       return
     }
     const createdAt = Date.now()
+    const failedFiles: File[] = []
     for (const file of selectedFiles) {
       const offer: SharedFileOffer = {
         offerId: uuidv4(),
@@ -109,32 +112,36 @@ export function PullSharingPanel({
         visibility,
         recipientIds: visibility === "selected" ? activeRecipients : [],
       }
-      onPublish(offer, file)
+      if (!onPublish(offer, file)) failedFiles.push(file)
     }
-    setSelectedFiles([])
+    const published = selectedFiles.length - failedFiles.length
+    if (published) toast.success(`${published} ${published === 1 ? "file" : "files"} made available`, {
+      description: failedFiles.length ? "Some files could not be offered; they remain selected." : "Eligible peers can request them while you stay in the room.",
+    })
+    setSelectedFiles(failedFiles)
     setFileError("")
-    setRecipients([])
+    if (!failedFiles.length) setRecipients([])
   }
 
   return (
-    <Card className="rounded-2xl border-border shadow-sm">
-      <CardHeader className="border-b border-border p-5 sm:p-6">
-        <div className="flex items-start gap-3">
+    <Card className="gap-0 py-0 rounded-2xl border-border shadow-sm">
+      <CardHeader className="border-b border-border p-4 sm:p-6">
+        <div className="flex flex-wrap items-start gap-3">
           <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
             <Download size={19} />
           </span>
-          <div>
+          <div className="min-w-0 flex-1 basis-[9rem]">
             <CardTitle className="text-lg">Available files</CardTitle>
             <CardDescription className="mt-1">
               Pull a file directly from a peer while they’re online.
             </CardDescription>
           </div>
-          <span className="ml-auto rounded-full bg-secondary px-2.5 py-1 text-xs font-medium">
+          <span className="ml-auto shrink-0 whitespace-nowrap rounded-full bg-secondary px-2.5 py-1 text-xs font-medium">
             {incomingOffers.length} available
           </span>
         </div>
       </CardHeader>
-      <CardContent className="space-y-6 p-5 sm:p-6">
+      <CardContent className="space-y-6 p-4 sm:p-6">
         <section aria-label="Files offered by peers" className="space-y-2">
           {incomingOffers.length === 0 ? (
             <div className="rounded-xl border border-dashed border-border bg-muted/30 px-4 py-7 text-center">
@@ -159,14 +166,14 @@ export function PullSharingPanel({
                   <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-accent text-accent-foreground">
                     <FileIcon size={17} />
                   </span>
-                  <div className="min-w-0 flex-1">
+                  <div className="min-w-0 flex-1 basis-[11rem]">
                     <p
                       className="truncate text-sm font-medium"
                       title={offer.name}
                     >
                       {offer.name}
                     </p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
+                    <p className="mt-0.5 break-words text-xs text-muted-foreground">
                       {offer.ownerName} · {formatSize(offer.size)} ·{" "}
                       {remaining < 1
                         ? "Expires in under a minute"
@@ -227,10 +234,12 @@ export function PullSharingPanel({
               the room. Contents are not uploaded to the server.
             </p>
           </div>
-          <label className="flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-input bg-muted/20 px-3 text-sm hover:border-primary/70">
-            <Plus size={16} />
-            Choose up to 5 files (50 MB each, 200 MB active total)
+          <label className="flex min-h-11 cursor-pointer flex-wrap items-center justify-center gap-2 rounded-lg border border-dashed border-input bg-muted/20 px-3 py-2.5 text-center text-sm hover:border-primary/70 focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
+            <Plus size={16} className="shrink-0" />
+            <span>Choose up to 5 files (50 MB each, 200 MB active total)</span>
+            <Kbd size="sm" className="hidden sm:inline-flex">O</Kbd>
             <input
+              id="offer-file-input"
               type="file"
               multiple
               className="sr-only"
@@ -267,25 +276,25 @@ export function PullSharingPanel({
             </ul>
           )}
           <div className="grid gap-3 sm:grid-cols-2">
-            <label className="space-y-1 text-xs font-medium">
+            <label className="flex flex-col gap-1.5 text-xs font-medium">
               Audience
               <select
                 value={visibility}
                 onChange={(event) =>
                   setVisibility(event.target.value as "room" | "selected")
                 }
-                className="h-11 w-full rounded-lg border border-input bg-background px-3 text-sm font-normal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="h-11 w-full rounded-lg border border-input bg-background px-3 text-base font-normal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:text-sm"
               >
                 <option value="room">Everyone in this room</option>
                 <option value="selected">Selected peers</option>
               </select>
             </label>
-            <label className="space-y-1 text-xs font-medium">
+            <label className="flex flex-col gap-1.5 text-xs font-medium">
               Available for
               <select
                 value={duration}
                 onChange={(event) => setDuration(Number(event.target.value))}
-                className="h-11 w-full rounded-lg border border-input bg-background px-3 text-sm font-normal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="h-11 w-full rounded-lg border border-input bg-background px-3 text-base font-normal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:text-sm"
               >
                 <option value={5}>5 minutes</option>
                 <option value={10}>10 minutes (default)</option>
@@ -303,10 +312,11 @@ export function PullSharingPanel({
                 peers.map(([id, name]) => (
                   <label
                     key={id}
-                    className="flex min-h-9 items-center gap-2 text-sm"
+                    className="flex min-h-9 cursor-pointer items-center gap-2 text-sm"
                   >
                     <input
                       type="checkbox"
+                      className="size-4 cursor-pointer rounded accent-primary"
                       checked={recipients.includes(id)}
                       onChange={(event) =>
                         setRecipients((current) =>
@@ -316,7 +326,7 @@ export function PullSharingPanel({
                         )
                       }
                     />
-                    {name}
+                    <span className="min-w-0 break-all">{name}</span>
                   </label>
                 ))
               ) : (
@@ -344,7 +354,7 @@ export function PullSharingPanel({
               exceedsRoomQuota ||
               (visibility === "selected" && activeRecipients.length === 0)
             }
-            className="min-h-11 w-full"
+            className="h-auto min-h-11 w-full whitespace-normal py-2 text-center"
           >
             <Timer size={16} />
             Make available for{" "}
@@ -363,18 +373,18 @@ export function PullSharingPanel({
             {ownOffers.map((offer) => (
               <div
                 key={offer.offerId}
-                className="flex items-center gap-2 rounded-lg bg-muted/40 px-3 py-2"
+                className="flex min-w-0 items-center gap-2 rounded-lg bg-muted/40 px-3 py-2"
               >
                 <span className="min-w-0 flex-1 truncate text-sm">
                   {offer.name}
                 </span>
-                <span className="text-xs text-muted-foreground">
+                <span className="shrink-0 text-xs text-muted-foreground">
                   {Math.max(0, Math.ceil((offer.expiresAt - now) / 60000))}m
                 </span>
                 <Button
                   size="icon"
                   variant="ghost"
-                  className="size-11 text-destructive"
+                  className="size-11 shrink-0 text-destructive hover:text-destructive"
                   onClick={() => onRevoke(offer.offerId)}
                   aria-label={`Stop sharing ${offer.name}`}
                 >

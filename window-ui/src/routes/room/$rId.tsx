@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 import { motion, useReducedMotion } from "framer-motion"
 import {
@@ -24,9 +24,12 @@ import {
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { KeyboardShortcutsButton } from "@/components/keybindings/KeyboardShortcutsButton"
+import { Kbd } from "@/components/keybindings/Kbd"
 import { useFileStore } from "@/store/fileStore"
 import { useFile } from "@/store/hooks/fileHook"
 import { useSocket } from "@/store/hooks/socketHook"
+import { useKeybindings } from "@/hooks/useKeybindings"
 import FileUpload from "@/components/room/fileUpload"
 import ProgressSection from "@/components/room/progress"
 import { RemoteUsersPanel } from "@/components/room/remoteUsersPanel"
@@ -59,12 +62,14 @@ export default function Room() {
   const navigate = useNavigate()
   const { userId, roomId, userName, remoteUsers, setUserId, setRoomId } =
     useUserStore()
+  const [peersSheetOpen, setPeersSheetOpen] = useState(false)
   const {
     filesToBeSent,
     receivedFileInfo,
     transferProgress,
     isSending,
     sendingFile,
+    clearFilesToBeSent,
   } = useFileStore()
   const {
     dataChannelMap,
@@ -171,34 +176,125 @@ export default function Room() {
     }
   }
 
+  const leaveRoom = () => {
+    navigate({ to: "/" })
+    toast.info("Left room")
+  }
+
+  const handleOpenFileInput = () => {
+    const fileInput = document.getElementById("file-input") as HTMLInputElement | null
+    if (fileInput && !isSending && isConnected) {
+      fileInput.click()
+    } else if (!isConnected) {
+      toast.info("Waiting for a peer", {
+        description: "Connect to a peer before selecting files to send.",
+      })
+    }
+  }
+
+  const handleOpenOfferInput = () => {
+    const offerInput = document.getElementById("offer-file-input") as HTMLInputElement | null
+    if (offerInput) {
+      offerInput.click()
+    }
+  }
+
+  // Register Room screen keybindings
+  useKeybindings([
+    {
+      keys: ["u", "f", "Alt+U"],
+      handler: handleOpenFileInput,
+      allowInInput: false,
+    },
+    {
+      keys: ["s", "Alt+S"],
+      handler: () => {
+        if (filesToBeSent.length > 0 && !isSending && isConnected) {
+          sendFile()
+        } else if (!isConnected) {
+          toast.info("Waiting for peer connection", {
+            description: "A peer connection must be established before sending files.",
+          })
+        } else if (filesToBeSent.length === 0) {
+          toast.info("No files selected", {
+            description: "Press 'U' to select files first.",
+          })
+        }
+      },
+      allowInInput: false,
+    },
+    {
+      keys: ["x", "Alt+X"],
+      handler: () => {
+        if (filesToBeSent.length > 0 && !isSending) {
+          clearFilesToBeSent()
+          toast.info("Cleared selected files")
+        }
+      },
+      allowInInput: false,
+    },
+    {
+      keys: ["r", "Alt+R"],
+      handler: () => copyText(rId, "Room ID copied"),
+      allowInInput: false,
+    },
+    {
+      keys: ["i", "Alt+I"],
+      handler: () => copyText(window.location.href, "Invite link copied"),
+      allowInInput: false,
+    },
+    {
+      keys: ["p", "Alt+P"],
+      handler: () => {
+        setPeersSheetOpen((prev) => !prev)
+      },
+      allowInInput: false,
+    },
+    {
+      keys: ["o", "Alt+O"],
+      handler: handleOpenOfferInput,
+      allowInInput: false,
+    },
+    {
+      keys: ["l", "h", "Alt+L", "Alt+H"],
+      handler: leaveRoom,
+      allowInInput: false,
+    },
+  ])
+
   return (
     <SidebarProvider>
-      <Sidebar side="left" className="room-sharing-sidebar hidden lg:flex">
+      <Sidebar
+        side="left"
+        wrapperClassName="hidden lg:block"
+        className="room-sharing-sidebar hidden lg:flex"
+      >
         <SidebarContent>
           <RemoteUsersPanel remoteUsers={remoteUsers} />
         </SidebarContent>
       </Sidebar>
-      <main className="relative isolate min-h-svh w-full min-w-0 bg-background">
+      <main className="relative isolate min-h-svh w-full min-w-0 overflow-x-clip bg-background">
         <div
           aria-hidden="true"
           className="room-dotted-background pointer-events-none absolute inset-0 z-0"
         />
-        <header className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 py-4 sm:px-6 lg:px-8">
+        <header className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between gap-2 px-4 py-4 sm:px-6 lg:px-8">
           <Button
             variant="ghost"
-            onClick={() => navigate({ to: "/" })}
-            className="min-h-11 px-2 sm:px-3"
+            onClick={leaveRoom}
+            className="min-h-11 px-2 sm:px-3 gap-1.5"
           >
             <ArrowLeft size={17} />
             <span>Home</span>
+            <Kbd size="sm" className="hidden sm:inline-flex">H</Kbd>
           </Button>
           <div className="flex items-center gap-2">
             <div className="lg:hidden">
-              <Sheet>
+              <Sheet open={peersSheetOpen} onOpenChange={setPeersSheetOpen}>
                 <SheetTrigger asChild>
                   <Button
                     variant="outline"
-                    className="min-h-11 gap-2"
+                    className="min-h-11 gap-1.5 px-2.5 sm:gap-2 sm:px-3 rounded-lg bg-card"
                     aria-label={`Show ${remoteUserCount} connected peers`}
                   >
                     <Users size={17} />
@@ -206,14 +302,16 @@ export default function Room() {
                     <span className="rounded-full bg-secondary px-2 py-0.5 text-xs">
                       {remoteUserCount}
                     </span>
+                    <Kbd size="sm" className="hidden sm:inline-flex">P</Kbd>
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="left" className="w-[min(22rem,90vw)] p-3">
+                <SheetContent side="left" className="w-[min(22rem,90vw)] p-3 pt-12">
                   <SheetTitle className="sr-only">Connected peers</SheetTitle>
                   <RemoteUsersPanel remoteUsers={remoteUsers} />
                 </SheetContent>
               </Sheet>
             </div>
+            <KeyboardShortcutsButton />
             <ThemeToggle />
           </div>
         </header>
@@ -225,10 +323,10 @@ export default function Room() {
             transition={{ duration: reducedMotion ? 0 : 0.18 }}
             className="mx-auto w-full max-w-6xl"
           >
-            <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,0.9fr)]">
-              <Card className="overflow-hidden rounded-2xl border-border shadow-sm">
-                <CardHeader className="gap-5 border-b border-border p-5 sm:p-7">
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(20rem,0.9fr)]">
+              <Card className="gap-0 py-0 overflow-hidden rounded-2xl border-border shadow-sm">
+                <CardHeader className="gap-4 sm:gap-5 border-b border-border p-4 sm:p-6">
+                  <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-muted-foreground">
                         Sharing room
@@ -236,7 +334,7 @@ export default function Room() {
                       <CardTitle className="mt-1 text-2xl font-semibold tracking-tight sm:text-[1.75rem]">
                         Your files, together
                       </CardTitle>
-                      <CardDescription className="mt-2 flex min-w-0 items-center gap-2 text-sm">
+                      <CardDescription className="mt-2 flex min-w-0 flex-wrap items-center gap-2 text-sm">
                         <span
                           className={cn(
                             "inline-flex min-h-7 items-center gap-1.5 rounded-full px-2.5 font-medium",
@@ -255,31 +353,34 @@ export default function Room() {
                         )}
                       </CardDescription>
                     </div>
-                    <div className="flex shrink-0 flex-wrap gap-2">
+                    <div className="flex min-w-0 flex-wrap gap-2">
                       <Button
                         variant="outline"
-                        className="min-h-11"
+                        className="min-h-11 gap-1.5"
                         onClick={() => copyText(rId, "Room ID copied")}
                       >
                         <Copy size={15} />
-                        Copy ID
+                        <span>Copy ID</span>
+                        <Kbd size="sm" className="hidden md:inline-flex">R</Kbd>
                       </Button>
                       <Button
                         variant="outline"
-                        className="min-h-11"
+                        className="min-h-11 gap-1.5"
                         onClick={() =>
                           copyText(window.location.href, "Invite link copied")
                         }
                       >
                         <Link2 size={15} />
-                        Copy invite
+                        <span>Copy invite</span>
+                        <Kbd size="sm" className="hidden md:inline-flex">I</Kbd>
                       </Button>
                       <Button
                         variant="ghost"
-                        className="min-h-11 text-destructive hover:text-destructive"
-                        onClick={() => navigate({ to: "/" })}
+                        className="min-h-11 text-destructive hover:text-destructive gap-1.5"
+                        onClick={leaveRoom}
                       >
-                        Leave
+                        <span>Leave</span>
+                        <Kbd size="sm" className="hidden md:inline-flex">L</Kbd>
                       </Button>
                     </div>
                   </div>
@@ -300,7 +401,7 @@ export default function Room() {
                   </div>
                 </CardHeader>
 
-                <CardContent className="space-y-5 p-5 sm:p-7">
+                <CardContent className="space-y-5 p-4 sm:p-6">
                   <div>
                     <h2 className="text-base font-semibold">Send files</h2>
                     <p className="mt-1 text-sm leading-5 text-muted-foreground">
@@ -313,20 +414,29 @@ export default function Room() {
                     disabled={
                       filesToBeSent.length === 0 || isSending || !isConnected
                     }
-                    className="min-h-12 w-full rounded-lg text-base font-semibold"
+                    className="min-h-12 w-full justify-center gap-2 rounded-lg text-base font-semibold"
                   >
                     {isSending ? (
                       <>
                         <Clock3 size={18} className="animate-spin" />
-                        Sending files…
+                        <span>Sending files…</span>
                       </>
                     ) : (
                       <>
                         <Send size={17} />
-                        Send{" "}
-                        {filesToBeSent.length
-                          ? `${filesToBeSent.length} ${filesToBeSent.length === 1 ? "file" : "files"}`
-                          : "files"}
+                        <span>
+                          Send{" "}
+                          {filesToBeSent.length
+                            ? `${filesToBeSent.length} ${filesToBeSent.length === 1 ? "file" : "files"}`
+                            : "files"}
+                        </span>
+                        <Kbd
+                          variant="primary"
+                          size="sm"
+                          className="ml-1 hidden sm:inline-flex"
+                        >
+                          S
+                        </Kbd>
                       </>
                     )}
                   </Button>
