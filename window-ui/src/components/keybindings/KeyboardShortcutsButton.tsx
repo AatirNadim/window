@@ -20,12 +20,13 @@ export function KeyboardShortcutsButton({ className }: KeyboardShortcutsButtonPr
       <TooltipTrigger asChild>
         <Button
           variant="outline"
-          size="icon"
+          size="default"
           onClick={toggleCheatSheet}
           aria-label="Keyboard shortcuts cheat sheet"
-          className={`relative size-11 rounded-lg bg-card text-foreground transition-colors ${className ?? ""}`}
+          className={`h-11 gap-2 rounded-lg bg-card px-3 text-foreground transition-colors ${className ?? ""}`}
         >
           <Keyboard className="size-[1.2rem]" />
+          <Kbd size="sm" aria-hidden="true">?</Kbd>
           <span className="sr-only">Keyboard shortcuts</span>
         </Button>
       </TooltipTrigger>

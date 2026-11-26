@@ -1,4 +1,4 @@
-import { useRef } from "react"
+import { useRef, useState } from "react"
 import { v4 as uuidv4 } from "uuid"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { toast } from "sonner"
@@ -23,6 +23,7 @@ export default function Home() {
   const navigate = useNavigate()
   const { initializeUser, roomId, setRoomId } = useUserStore()
   const roomInputRef = useRef<HTMLInputElement>(null)
+  const [roomIdError, setRoomIdError] = useState("")
 
   const handleCreateRoom = () => {
     // Initialize user before creating room
@@ -38,23 +39,22 @@ export default function Home() {
 
   const handleJoinRoom = () => {
     if (!roomId?.trim()) {
-      toast.error("Invalid Room ID", {
-        description: "Please enter a room ID to join.",
-      })
+      setRoomIdError("Enter a room ID to join.")
+      roomInputRef.current?.focus()
       return
     }
 
     if (!isValidUUID(roomId.trim())) {
-      setRoomId("") // Clear the input field
-      toast.error("Invalid Room ID Format", {
-        description: "Please enter a valid UUID format room ID.",
-      })
+      setRoomIdError("Enter a valid room ID, or ask the sender to share it again.")
+      roomInputRef.current?.focus()
       return
     }
 
+    setRoomIdError("")
+
     initializeUser()
 
-    navigate({ to: `/room/${roomId}` })
+    navigate({ to: `/room/${roomId.trim()}` })
   }
 
   const handlePasteRoomId = async () => {
@@ -63,6 +63,7 @@ export default function Home() {
       const clean = text.trim()
       if (clean) {
         setRoomId(clean)
+        setRoomIdError("")
         roomInputRef.current?.focus()
         toast.info("Pasted from clipboard", { description: clean })
       } else {
@@ -104,7 +105,11 @@ export default function Home() {
         <div className="px-4 sm:px-6 lg:px-8">
           <HeroSection
             roomId={roomId}
-            setRoomId={setRoomId}
+            setRoomId={(id) => {
+              setRoomId(id)
+              setRoomIdError("")
+            }}
+            roomIdError={roomIdError}
             handleCreateRoom={handleCreateRoom}
             handleJoinRoom={handleJoinRoom}
             inputRef={roomInputRef}

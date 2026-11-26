@@ -1,4 +1,5 @@
-import { ArrowRight, Github, Plus, Radio, Sparkles } from "lucide-react"
+import { LogoMark } from "./LogoMark"
+import { ArrowRight, Github, Plus, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 interface LandingFooterProps {
@@ -96,9 +97,7 @@ export default function LandingFooter({ handleCreateRoom }: LandingFooterProps) 
             {/* Brand Mark and Mission */}
             <div className="space-y-2">
               <div className="inline-flex items-center gap-2.5 text-foreground">
-                <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground">
-                  <Radio size={16} strokeWidth={2} />
-                </span>
+                <LogoMark className="size-9" />
                 <span className="relative inline-block pb-1 text-xl font-bold tracking-[-0.04em]">
                   win<span className="text-primary">dow</span>
                   <span
