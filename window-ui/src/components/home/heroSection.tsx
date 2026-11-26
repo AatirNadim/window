@@ -98,7 +98,7 @@ export default function HeroSection({
         transition={{ duration: reducedMotion ? 0 : 0.25, delay: reducedMotion ? 0 : 0.08 }}
         className="w-full min-w-0 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:self-center lg:justify-self-end"
       >
-        <Card className="w-full gap-0 py-0 rounded-2xl border-border bg-card shadow-sm transition-all lg:max-w-[28rem]">
+        <Card className="w-full gap-0 py-0 rounded-2xl border-border bg-card soft-green-gradient shadow-sm transition-all lg:max-w-[28rem]">
           {/* Card Console Header */}
           <CardHeader className="flex flex-col items-stretch gap-1.5 border-b border-border/80 p-5 sm:p-6">
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -120,7 +120,7 @@ export default function HeroSection({
             <div className="space-y-2">
               <Button
                 onClick={handleCreateRoom}
-                className="group h-12 w-full justify-between rounded-lg bg-primary px-4 text-base font-semibold text-primary-foreground shadow-xs transition-all hover:opacity-95 active:scale-[0.99]"
+                className="group h-12 w-full justify-between rounded-lg px-4 text-base font-semibold text-primary-foreground shadow-xs transition-all hover:opacity-90 active:scale-[0.99]"
               >
                 <span className="flex items-center gap-2">
                   <Plus size={18} className="transition-transform group-hover:rotate-90" />

@@ -1,5 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 48" width="280" height="48" fill="none">
-  <rect width="48" height="48" rx="14" fill="#2F4A63"/>
+  <defs><linearGradient id="green" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#104B32"/><stop offset="1" stop-color="#1D754B"/></linearGradient></defs>
+  <rect width="48" height="48" rx="21.333333" fill="url(#green)"/>
   <g transform="translate(12, 12)" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none">
     <path d="M16.247 7.761a6 6 0 0 1 0 8.478"/>
     <path d="M19.075 4.933a10 10 0 0 1 0 14.134"/>
@@ -7,6 +8,6 @@
     <path d="M7.753 16.239a6 6 0 0 1 0-8.478"/>
     <circle cx="12" cy="12" r="2"/>
   </g>
-  <text x="64" y="38" fill="#131B2B" font-family="system-ui, -apple-system, sans-serif" font-size="44" font-weight="700" letter-spacing="-1.8">win<tspan fill="#2F4A63">dow</tspan></text>
-  <rect x="64" y="44" width="40" height="4" rx="2" fill="#E8A9B9"/>
+  <text x="64" y="38" fill="#14251D" font-family="system-ui, -apple-system, sans-serif" font-size="44" font-weight="700" letter-spacing="-1.8">win<tspan fill="#176B47">dow</tspan></text>
+  <rect x="64" y="44" width="40" height="4" rx="2" fill="#62BD89"/>
 </svg>

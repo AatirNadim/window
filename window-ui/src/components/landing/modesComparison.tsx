@@ -282,7 +282,7 @@ export default function ModesComparison() {
                 className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
               >
                 <div className="relative rounded-xl border border-border bg-background/60 p-4">
-                  <span className="font-mono text-[10px] font-bold text-pink-accent">STEP 01</span>
+                  <span className="font-mono text-[10px] font-bold text-foreground">STEP 01</span>
                   <div className="mt-2 flex items-center gap-2">
                     <Lock size={16} className="text-foreground" />
                     <h5 className="text-sm font-bold text-foreground">Memory Staging</h5>
@@ -293,7 +293,7 @@ export default function ModesComparison() {
                 </div>
 
                 <div className="relative rounded-xl border border-border bg-background/60 p-4">
-                  <span className="font-mono text-[10px] font-bold text-pink-accent">STEP 02</span>
+                  <span className="font-mono text-[10px] font-bold text-foreground">STEP 02</span>
                   <div className="mt-2 flex items-center gap-2">
                     <Share2 size={16} className="text-foreground" />
                     <h5 className="text-sm font-bold text-foreground">Meta Advertising</h5>
@@ -304,7 +304,7 @@ export default function ModesComparison() {
                 </div>
 
                 <div className="relative rounded-xl border border-border bg-background/60 p-4">
-                  <span className="font-mono text-[10px] font-bold text-pink-accent">STEP 03</span>
+                  <span className="font-mono text-[10px] font-bold text-foreground">STEP 03</span>
                   <div className="mt-2 flex items-center gap-2">
                     <Zap size={16} className="text-foreground" />
                     <h5 className="text-sm font-bold text-foreground">Demand Pull</h5>

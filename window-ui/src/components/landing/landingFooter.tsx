@@ -53,7 +53,7 @@ export default function LandingFooter({ handleCreateRoom }: LandingFooterProps) 
             <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
               <Button
                 onClick={handleCreateRoom}
-                className="group h-12 w-full justify-center rounded-lg bg-primary px-6 text-sm font-semibold text-primary-foreground shadow-xs hover:opacity-95 sm:w-auto"
+                className="group h-12 w-full justify-center rounded-lg px-6 text-sm font-semibold text-primary-foreground shadow-xs hover:opacity-90 sm:w-auto"
               >
                 <Plus size={18} className="transition-transform group-hover:rotate-90" />
                 <span>Create instant room</span>
