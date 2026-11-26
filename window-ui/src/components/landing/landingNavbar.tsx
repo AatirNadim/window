@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
-import { Radio, Github, Menu, X, ArrowUpRight } from "lucide-react"
+import { Github, Menu, X, ArrowUpRight } from "lucide-react"
+import { LogoMark } from "./LogoMark"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { KeyboardShortcutsButton } from "@/components/keybindings/KeyboardShortcutsButton"
 
@@ -45,9 +46,7 @@ export default function LandingNavbar() {
           className="group flex items-center gap-2.5 text-foreground transition-opacity hover:opacity-90"
           aria-label="Window - Back to top"
         >
-          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground shadow-xs transition-transform group-hover:scale-105">
-            <Radio size={18} strokeWidth={2.2} />
-          </span>
+          <LogoMark className="size-9 shadow-xs transition-transform group-hover:scale-105" />
           <span className="relative inline-block pb-1 text-2xl font-bold tracking-[-0.04em]">
             win<span className="text-primary">dow</span>
             <span
