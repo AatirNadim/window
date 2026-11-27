@@ -1,0 +1,33 @@
+name: Deploy Cloudflare Worker
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - "cloudflare/keep-alive/**"
+      - ".github/workflows/deploy-cloudflare.yaml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-keep-alive-production
+  cancel-in-progress: false
+
+jobs:
+  deploy-keep-alive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Test Worker
+        run: node --test cloudflare/keep-alive/worker.test.mjs
+      - name: Deploy Worker and cron trigger
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: cloudflare/keep-alive
+          wranglerVersion: '4.54.0'
