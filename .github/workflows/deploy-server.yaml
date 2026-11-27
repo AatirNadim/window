@@ -26,7 +26,6 @@ jobs:
             -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
             -H "Content-Type: application/json" \
             -d '[
-              {"key": "NODE_ENV", "value": "production"},
               {"key": "PORT", "value": "10000"}
             ]' \
             --fail \
