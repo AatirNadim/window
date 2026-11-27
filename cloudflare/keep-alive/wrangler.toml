@@ -1,0 +1,14 @@
+name = "window-keep-alive"
+main = "worker.mjs"
+compatibility_date = "2025-11-01"
+workers_dev = false
+
+[triggers]
+crons = ["*/12 * * * *"]
+
+[vars]
+TARGET_URL = "https://window-kq5v.onrender.com/health"
+
+[observability]
+enabled = true
+head_sampling_rate = 1

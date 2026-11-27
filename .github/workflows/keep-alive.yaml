@@ -1,10 +1,7 @@
 name: Render Keep-Alive Ping
 
 on:
-  schedule:
-    # Runs every 12 minutes
-    - cron: "*/12 * * * *"
-  # Allow manual trigger from GitHub Actions tab
+  # Manual fallback for the Cloudflare scheduled Worker.
   workflow_dispatch:
 
 jobs:
