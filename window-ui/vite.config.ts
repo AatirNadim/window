@@ -9,7 +9,7 @@ import { TanStackRouterVite } from "@tanstack/router-plugin/vite"
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "")
-  const siteUrl = (env.VITE_SITE_URL || "http://localhost:3000").replace(/\/$/, "")
+  const siteUrl = (env.VITE_SITE_URL || (mode === "production" ? "https://window.aatirnadim.dev" : "http://localhost:3000")).replace(/\/$/, "")
   process.env.VITE_SITE_URL = siteUrl
 
   return {
