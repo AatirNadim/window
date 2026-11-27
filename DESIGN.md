@@ -1,6 +1,6 @@
 # Window — Design System Specification & Frontend Blueprint
 
-> **Design Archetype:** Nordic Slate Precision (Swiss Minimalist Structural Grid + High-Craft Developer Utility)  
+> **Design Archetype:** Forest Green Precision (Swiss Minimalist Structural Grid + High-Craft Developer Utility)  
 > **Brand Identity:** Real-time, zero-upload peer-to-peer file transfer over WebRTC DataChannels  
 > **Target Audience:** Privacy-conscious professionals, developers, creatives, and everyday users requiring zero-footprint transfers.
 
@@ -22,38 +22,11 @@ Window replaces the traditional "upload to a third-party cloud, wait, copy link,
 
 ## 2. Color System & Semantic Tokens
 
-> **Current palette:** The UI now uses warm cream `#EFE8DD`, charcoal `#303841`, teal `#76ABAE`, and orange `#FF5722`. Light mode favors a pale teal background, cream surfaces, and charcoal text; dark mode favors charcoal surfaces and cream text. Teal supports secondary states and orange highlights primary room creation actions and small accents. The token values in `window-ui/src/styles.css` are authoritative; the historical palette below is superseded.
-
-Window adheres strictly to the **60-30-10 distribution rule**, rejecting generic AI clichés (such as indigo/purple neon gradients and glowing backdrop-blur orbs) in favor of crisp, high-contrast slate surfaces, tactile borders, and signature blush/mint accents.
-
-### Color Tokens & Palette
-
-| Token | Light Mode (`:root`) | Dark Mode (`.dark`) | Intent / Usage |
-| :--- | :--- | :--- | :--- |
-| `--background` | `#F6F8F8` (Arctic Porcelain) | `#131B2B` (Abyssal Navy) | 60% Dominant canvas |
-| `--foreground` | `#131B2B` (Deep Ink Slate) | `#F1F6F5` (Frost White) | High-contrast readable typography |
-| `--card` | `#FFFFFF` (Pure Card White) | `#1C293B` (Slate Charcoal) | Elevated surface container |
-| `--card-foreground` | `#131B2B` | `#F1F6F5` | Card text content |
-| `--primary` | `#2F4A63` (Nautical Slate) | `#CFEAE0` (Luminous Mint) | Primary interactive actions, emphasis |
-| `--primary-foreground`| `#FFFFFF` | `#131B2B` | Inverted text on primary buttons |
-| `--secondary` | `#E7EEF1` (Mist Blue) | `#2F4A63` (Slate Navy) | Secondary button fill, subtle badges |
-| `--secondary-foreground`| `#131B2B` | `#F1F6F5` | Secondary text |
-| `--muted` | `#EDF3F4` (Cloud Grey) | `#25394B` (Muted Steel) | Section alternate background, pills |
-| `--muted-foreground` | `#2F4A63` (65% opacity tint) | `#C5D5D9` (Soft Slate) | Secondary labels, descriptions |
-| `--accent` | `#CFEAE0` (Seafoam Mint) | `#2F4A63` | Subtle badge backgrounds, active chips |
-| `--accent-foreground` | `#131B2B` | `#CFEAE0` | Accent text |
-| `--pink-accent` | `#E8A9B9` (Blush Rose) | `#E8A9B9` (Blush Rose) | Signature brand underline & dot accents |
-| `--pink-accent-foreground`| `#131B2B` | `#131B2B` | Text on blush elements |
-| `--success` | `#23634F` (Pine Emerald) | `#72D8B1` (Bright Mint) | Connected status, checkmarks, completed |
-| `--warning` | `#75500B` (Burnished Amber) | `#F2CF7A` (Golden Sand) | Approaching limits, countdown warnings |
-| `--destructive` | `#A83333` (Crimson Iron) | `#FF938C` (Coral Rose) | Errors, revoking offers, leaving rooms |
-| `--border` | `#D1DEE2` (Mist Stroke) | `#33475A` (Deep Slate Stroke) | 1px crisp card and container dividers |
-| `--input` | `#5B91A3` (Steel Cyan) | `#5B91A3` (Steel Cyan) | Input border & subtle interactive controls |
-| `--ring` | `#5B91A3` | `#CFEAE0` | Keyboard focus ring (`focus-visible`) |
+The authoritative light and dark theme tokens live in `window-ui/src/styles.css`. The current palette uses forest green for primary actions, pale green and white surfaces in light mode, and deep green surfaces with mint accents in dark mode. Components should use semantic tokens such as `background`, `card`, `primary`, `muted`, `border`, and the status colors instead of fixed colors. The landing page grid and shared surfaces also use theme-specific variables.
 
 ### Signature Brand Accent
-- **Logo Wordmark:** `win` in foreground + `dow` in primary + a 4px high blush rose underline pill (`#E8A9B9`) resting underneath.
-- **Infinite SVG Window Grid:** Subtle 20px grid strokes (`--window-grid-line`) with randomized, staggered opacity pulses across palette colors (Ink, Blue, Teal, Mint, Pink).
+- **Logo Wordmark:** `win` in foreground + `dow` in primary + a 4px high green underline pill (`--pink-accent`) resting underneath.
+- **Infinite SVG Window Grid:** Subtle 20px grid strokes (`--window-grid-line`) with randomized, staggered opacity pulses across theme-specific green palette colors.
 
 ---
 
@@ -92,7 +65,7 @@ The typography utilizes **Figtree Variable** (`@fontsource-variable/figtree`), s
   - Micro-icons: `rounded-md` (6px)
 
 ### Anti-Slop Strict Directives
-1. **NO AI Purples/Indigos:** Prohibited: `bg-gradient-to-r from-purple-600 to-indigo-600`. Permitted: Solid nautical slate `#2F4A63`, seafoam mint `#CFEAE0`, blush rose `#E8A9B9`.
+1. **NO AI Purples/Indigos:** Prohibited: `bg-gradient-to-r from-purple-600 to-indigo-600`. Use the semantic green theme tokens defined in `styles.css`.
 2. **NO Blurry Glow Orbs:** Prohibited: `<div className="blur-3xl bg-pink-500/20" />`. Permitted: Crisp geometric 1px SVG grid lines, subtle radial dot pattern, and tactile border outlines.
 3. **NO Repetitive 3-Column Equal Dumps:** Layouts must embrace asymmetric visual weight:
    - Hero: 60/40 Split (left editorial value + right action card / interactive sandbox).
@@ -107,7 +80,7 @@ The typography utilizes **Figtree Variable** (`@fontsource-variable/figtree`), s
 The landing page must be an end-to-end showcase of engineering craft and visual restraint. It consists of seven tightly orchestrated sections:
 
 ### 1. Persistent Header Navigation
-- **Left:** Window Brand Mark (interactive link to `/` with SVG signal icon and blush accent dot).
+- **Left:** Window Brand Mark (interactive link to `/` with SVG signal icon and green accent).
 - **Center:** Protocol Status Badge (`WebRTC DataChannel • Zero Server Storage` with animated emerald pulse dot).
 - **Right:** Anchor navigation (`How it Works`, `Push vs Pull`, `Architecture`, `Limits`, `FAQ`), GitHub repo link, and ThemeToggle (`next-themes`).
 
@@ -172,4 +145,4 @@ The landing page must be an end-to-end showcase of engineering craft and visual 
 1. **Reduced Motion:** Every animation (Framer Motion transitions, SVG grid movements, packet counters) must respect `prefers-reduced-motion` using `useReducedMotion()`.
 2. **Keyboard Navigation:** All interactive elements (`Button`, `Input`, `Accordion`, `Tab`) must have visible outline rings (`focus-visible:ring-2 focus-visible:ring-ring`).
 3. **Contrast Compliance:** All text layers must meet WCAG AAA / AA contrast ratios (minimum 4.5:1 for body, 3:1 for large display titles).
-4. **Light & Dark Theme Parity:** Seamless rendering in both light (`#f6f8f8`) and dark (`#131b2b`) modes without contrast degradation or flash of unstyled theme.
+4. **Light & Dark Theme Parity:** Seamless rendering in both light and dark modes without contrast degradation or flash of unstyled theme.

@@ -22,15 +22,15 @@ export const Route = createFileRoute("/")({
 export default function Home() {
   const navigate = useNavigate()
   const { initializeUser, roomId, setRoomId } = useUserStore()
+  const [name, setName] = useState(useUserStore.getState().userName ?? "")
+  const [nameError, setNameError] = useState("")
   const roomInputRef = useRef<HTMLInputElement>(null)
   const [roomIdError, setRoomIdError] = useState("")
 
   const handleCreateRoom = () => {
-    // Initialize user before creating room
-    initializeUser()
-
+    if (!name.trim()) { setNameError("Enter your name or generate one."); document.getElementById("user-name")?.focus(); return }
     const newRoomId = uuidv4()
-    setRoomId(newRoomId)
+    initializeUser(name, newRoomId)
 
     // navigate to the new room
     navigate({ to: `/room/${newRoomId}` })
@@ -51,8 +51,8 @@ export default function Home() {
     }
 
     setRoomIdError("")
-
-    initializeUser()
+    if (!name.trim()) { setNameError("Enter your name or generate one."); document.getElementById("user-name")?.focus(); return }
+    initializeUser(name, roomId.trim())
 
     navigate({ to: `/room/${roomId.trim()}` })
   }
@@ -65,9 +65,8 @@ export default function Home() {
         setRoomId(clean)
         setRoomIdError("")
         roomInputRef.current?.focus()
-        toast.info("Pasted from clipboard", { description: clean })
       } else {
-        toast.info("Clipboard is empty", { description: "Copy a room ID, then try again." })
+        toast.warning("Clipboard is empty", { description: "Copy a room ID, then try again." })
       }
     } catch {
       roomInputRef.current?.focus()
@@ -104,6 +103,9 @@ export default function Home() {
       <main className="relative z-10 flex flex-col">
         <div className="px-4 sm:px-6 lg:px-8">
           <HeroSection
+            name={name}
+            nameError={nameError}
+            setName={(value) => { setName(value); setNameError("") }}
             roomId={roomId}
             setRoomId={(id) => {
               setRoomId(id)

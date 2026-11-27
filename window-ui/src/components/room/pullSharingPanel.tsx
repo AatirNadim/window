@@ -124,7 +124,7 @@ export function PullSharingPanel({
   }
 
   return (
-    <Card className="gap-0 py-0 rounded-2xl border-border shadow-sm">
+    <Card className="min-w-0 gap-0 py-0 rounded-2xl border-border shadow-sm">
       <CardHeader className="border-b border-border p-4 sm:p-6">
         <div className="flex flex-wrap items-start gap-3">
           <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
@@ -275,8 +275,8 @@ export function PullSharingPanel({
               ))}
             </ul>
           )}
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="flex flex-col gap-1.5 text-xs font-medium">
+          <div className="grid min-w-0 gap-3 sm:grid-cols-2">
+            <label className="flex min-w-0 flex-col gap-1.5 text-xs font-medium">
               Audience
               <select
                 value={visibility}
@@ -289,7 +289,7 @@ export function PullSharingPanel({
                 <option value="selected">Selected peers</option>
               </select>
             </label>
-            <label className="flex flex-col gap-1.5 text-xs font-medium">
+            <label className="flex min-w-0 flex-col gap-1.5 text-xs font-medium">
               Available for
               <select
                 value={duration}

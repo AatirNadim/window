@@ -97,6 +97,11 @@
   --sidebar-border: #385443;
   --sidebar-ring: #8bd5a6;
   --window-grid-line: color-mix(in srgb, #eaf5ed 6%, transparent);
+  --window-cell-ink: #8bd5a6;
+  --window-cell-blue: #62bd89;
+  --window-cell-teal: #b5e6c4;
+  --window-cell-mint: #a9d9b9;
+  --window-cell-pink: #78c997;
   --green-gradient: linear-gradient(135deg, #83d3a0, #b5e6c4);
   --soft-green-gradient: linear-gradient(145deg, #192920, #213b2b);
 }

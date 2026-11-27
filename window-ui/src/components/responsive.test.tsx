@@ -6,6 +6,7 @@ import { Sidebar, SidebarProvider } from "@/components/ui/sidebar"
 import LimitsMatrix from "@/components/landing/limitsMatrix"
 import LandingNavbar from "@/components/landing/landingNavbar"
 import { ThemeProvider } from "@/components/theme-provider"
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 
 function mockMatchMedia(matches = false) {
   Object.defineProperty(window, "matchMedia", {
@@ -31,6 +32,20 @@ describe("Responsive layout behavior", () => {
   afterEach(() => {
     cleanup()
     document.body.innerHTML = ""
+  })
+
+  it("constrains and scrolls dialog content on short screens", () => {
+    render(
+      <Dialog open>
+        <DialogContent>
+          <DialogTitle>Dialog</DialogTitle>
+        </DialogContent>
+      </Dialog>,
+    )
+
+    const dialog = screen.getByRole("dialog")
+    expect(dialog.className).toContain("max-h-[calc(100dvh-2rem)]")
+    expect(dialog.className).toContain("overflow-y-auto")
   })
 
   it("applies wrapperClassName to Sidebar outer wrapper to prevent phantom tablet gap", () => {

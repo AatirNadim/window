@@ -168,9 +168,15 @@ The `shared` workspace package contains the room, signaling, offer, and transfer
 
 The signaling server also exposes `GET /health` for a basic health response and `GET /ice-servers` for the STUN/TURN configuration used by browsers. Set `PORT` to change the server's listening port. On an HTTPS UI, the browser connects to the signaling server over secure WebSockets (`wss`).
 
+### Install as an app
+
+On a supported browser, use the browser’s install option to add Window to your device. Installation requires HTTPS (or localhost). Production builds register a service worker that shows an offline page when navigation fails; joining rooms and transferring files still require connectivity. The development server does not register the service worker.
+
 ### Search and social metadata
 
-The public homepage is listed in `window-ui/public/sitemap.xml`. Room URLs are excluded from indexing because they contain temporary sharing IDs. Set `VITE_SITE_URL` to the deployed site's public origin (for example, `https://files.example.com`) in `window-ui/.env.production` or the deployment environment before building. This value populates the canonical URL, social preview URLs, `robots.txt`, and the sitemap. The build fallback is `http://localhost:3000`, which is suitable only for local development.
+The public homepage is listed in `window-ui/public/sitemap.xml`. Netlify serves an `X-Robots-Tag: noindex, nofollow` header for room URLs, which contain temporary sharing IDs; robots.txt allows crawlers to access those URLs so they can see that directive. This is an indexing instruction, not access control: anyone with a room link can attempt to join. The offline page is also marked noindex. Other hosts must configure equivalent response headers for `/room/*` and `/offline.html`.
+
+Production builds default to `https://window.aatirnadim.dev`; set `VITE_SITE_URL` to the public origin when deploying elsewhere. This value populates the canonical URL, social preview URLs, `robots.txt`, and the sitemap. Development defaults to `http://localhost:3000`. After deployment, verify the response headers and submit the sitemap in Google Search Console or Bing Webmaster Tools. The homepage is client-rendered, so use those tools to verify that search engines can render its content.
 
 For TURN relay support, configure `TURN_URLS` and `TURN_SHARED_SECRET` on the signaling server. The server returns short-lived TURN credentials from `/ice-servers`.
 

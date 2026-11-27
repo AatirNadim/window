@@ -12,9 +12,13 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card"
 import { Button } from "../ui/button"
 import { Input } from "../ui/input"
+import { NameField } from "@/components/nameField"
 import { Kbd } from "@/components/keybindings/Kbd"
 
 type HeroSectionProps = {
+  name: string
+  nameError: string
+  setName: (name: string) => void
   roomId: string | null
   roomIdError: string
   setRoomId: (id: string) => void
@@ -46,6 +50,7 @@ const proofPoints = [
 ]
 
 export default function HeroSection({
+  name, nameError, setName,
   roomId,
   roomIdError,
   setRoomId,
@@ -116,6 +121,7 @@ export default function HeroSection({
 
           {/* Card Body */}
           <CardContent className="space-y-5 p-5 sm:p-6">
+            <NameField value={name} onChange={setName} error={nameError} />
             {/* Primary Action: Create Room */}
             <div className="space-y-2">
               <Button

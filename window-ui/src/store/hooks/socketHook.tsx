@@ -556,7 +556,7 @@ export const useSocket = () => {
   const requestFilePull = (offer: SharedFileOffer) => {
     if (!userId || !usePullStore.getState().offers.some((item) => item.offerId === offer.offerId && item.ownerId === offer.ownerId)) return
     if (Object.keys(pendingPullRequests.current).length > 0) {
-      toast.info("One download at a time", {
+      toast.warning("One download at a time", {
         description:
           "Finish or cancel the current pull before starting another.",
       })
@@ -610,7 +610,7 @@ export const useSocket = () => {
     })
     offerTimers.current[offer.offerId] = window.setTimeout(() => {
       removeLocalOffer(offer.offerId, "expired")
-      toast.info("File offer expired", { description: `${file.name} is no longer available to peers.` })
+      toast.warning("File offer expired", { description: `${file.name} is no longer available to peers.` })
     }, Math.max(0, offer.expiresAt - Date.now()))
     return true
   }
@@ -619,7 +619,6 @@ export const useSocket = () => {
     const offer = usePullStore.getState().offers.find((item) => item.offerId === offerId && item.ownerId === userId)
     if (!offer) return
     removeLocalOffer(offerId, "revoked")
-    toast.info("File offer removed", { description: `${offer.name} is no longer available to peers.` })
   }
 
   const cancelFilePull = (offer: SharedFileOffer) => {
@@ -636,7 +635,6 @@ export const useSocket = () => {
     delete pullStartTimers.current[offer.offerId]
     pullStore.setStatus(offer.offerId, "idle")
     pullStore.setProgress(offer.offerId, 0)
-    toast.info("Download cancelled", { description: offer.name })
   }
 
   const reserveIncomingBytes = (channel: RTCDataChannel, size: number) => {
