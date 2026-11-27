@@ -36,7 +36,7 @@ if (rootElement && !rootElement.innerHTML) {
     // <StrictMode>
     <ThemeProvider>
       <RouterProvider router={router} />
-      <Toaster closeButton position="top-right" richColors duration={2000} />
+      <Toaster closeButton position="top-right" duration={2000} />
     </ThemeProvider>,
     // </StrictMode>,
   )
@@ -46,3 +46,12 @@ if (rootElement && !rootElement.innerHTML) {
 // to log results (for example: reportWebVitals(console.log))
 // or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
 reportWebVitals()
+
+// Service workers require HTTPS (or localhost) and are enabled for production builds.
+if (import.meta.env.PROD && "serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch((error) => {
+      console.error("Service worker registration failed:", error)
+    })
+  })
+}

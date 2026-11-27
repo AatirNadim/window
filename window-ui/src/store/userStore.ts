@@ -8,15 +8,14 @@ interface UserState {
   userName: string | null
 
   roomId: string | null
+  confirmedRoomId: string | null
 
   remoteUsers: Record<string, string>
 }
 
 interface UserAction {
-  setUserId: () => void
   setIdentityToken: (token: string) => void
-  initializeUser: () => void
-  joinRoom: (roomId: string) => void
+  initializeUser: (name: string, roomId: string) => void
   leaveRoom: () => void
   clearUser: () => void
   addRemoteUser: (userId: string, userName: string) => void
@@ -27,7 +26,7 @@ interface UserAction {
 
 export type { UserState }
 
-const generateRandomUsername = (): string => {
+export const generateRandomUsername = (): string => {
   const adjectives = [
     "Swift",
     "Bright",
@@ -77,39 +76,17 @@ export const useUserStore = create<UserState & UserAction>()(
       currentRoomId: null,
       remoteUsers: {},
       roomId: null,
-
-      setUserId: () => {
-        set({ userId: uuidv4(), identityToken: null })
-      },
+      confirmedRoomId: null,
 
       setIdentityToken: (identityToken) => set({ identityToken }),
 
-      initializeUser: () => {
+      initializeUser: (name, roomId) => {
         const state = get()
-
-        // Only generate new user if doesn't exist
-        if (!state.userId || !state.userName) {
-          console.log("user details not found, generating new user...")
-
-          set({
-            userId: uuidv4(),
-            identityToken: null,
-            userName: generateRandomUsername(),
-          })
-        }
-      },
-
-      joinRoom: () => {
-        const state = get()
-
-        // Initialize user if not already done
-        if (!state.userId || !state.userName) {
-          set({
-            userId: uuidv4(),
-            identityToken: null,
-            userName: generateRandomUsername(),
-          })
-        }
+        const userName = name.trim()
+        const sameIdentity = state.userId && state.userName === userName
+        set({ userId: sameIdentity ? state.userId : uuidv4(),
+          identityToken: sameIdentity ? state.identityToken : null,
+          userName, roomId, confirmedRoomId: roomId })
       },
 
       leaveRoom: () => {
@@ -117,6 +94,7 @@ export const useUserStore = create<UserState & UserAction>()(
           userId: null,
           identityToken: null,
           roomId: null,
+          confirmedRoomId: null,
           remoteUsers: {},
         })
       },
@@ -126,6 +104,7 @@ export const useUserStore = create<UserState & UserAction>()(
           userId: null,
           identityToken: null,
           userName: null,
+          confirmedRoomId: null,
         })
       },
 

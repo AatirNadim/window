@@ -45,6 +45,8 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
+import { NameField } from "@/components/nameField"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { cn, isValidUUID } from "@/lib/utils"
 
 export const Route = createFileRoute("/room/$rId")({
@@ -60,8 +62,11 @@ export const Route = createFileRoute("/room/$rId")({
 export default function Room() {
   const { rId } = Route.useParams()
   const navigate = useNavigate()
-  const { userId, roomId, userName, remoteUsers, setUserId, setRoomId } =
+  const { userId, roomId, userName, remoteUsers, confirmedRoomId, initializeUser, setRoomId } =
     useUserStore()
+  const [joinName, setJoinName] = useState(userName ?? "")
+  const [nameError, setNameError] = useState("")
+  const needsName = confirmedRoomId !== rId
   const [peersSheetOpen, setPeersSheetOpen] = useState(false)
   const {
     filesToBeSent,
@@ -123,18 +128,14 @@ export default function Room() {
   }, [isRoomFull, navigate])
 
   useEffect(() => {
-    if (!roomId) return
-    if (!userId) {
-      setUserId()
-      return
-    }
+    if (needsName || !isValidUUID(rId.trim()) || roomId !== rId || !userId || !userName) return
     try {
       createWSConnection()
     } catch (error) {
       console.error("Room connection failed:", error)
       navigate({ to: "/" })
     }
-  }, [roomId, userId])
+  }, [roomId, userId, userName, needsName, rId])
 
   useEffect(() => {
     cleanUpRef.current = cleanUp
@@ -178,7 +179,6 @@ export default function Room() {
 
   const leaveRoom = () => {
     navigate({ to: "/" })
-    toast.info("Left room")
   }
 
   const handleOpenFileInput = () => {
@@ -186,7 +186,7 @@ export default function Room() {
     if (fileInput && !isSending && isConnected) {
       fileInput.click()
     } else if (!isConnected) {
-      toast.info("Waiting for a peer", {
+      toast.warning("Waiting for a peer", {
         description: "Connect to a peer before selecting files to send.",
       })
     }
@@ -212,11 +212,11 @@ export default function Room() {
         if (filesToBeSent.length > 0 && !isSending && isConnected) {
           sendFile()
         } else if (!isConnected) {
-          toast.info("Waiting for peer connection", {
+          toast.warning("Waiting for peer connection", {
             description: "A peer connection must be established before sending files.",
           })
         } else if (filesToBeSent.length === 0) {
-          toast.info("No files selected", {
+          toast.warning("No files selected", {
             description: "Press 'U' to select files first.",
           })
         }
@@ -228,7 +228,6 @@ export default function Room() {
       handler: () => {
         if (filesToBeSent.length > 0 && !isSending) {
           clearFilesToBeSent()
-          toast.info("Cleared selected files")
         }
       },
       allowInInput: false,
@@ -263,6 +262,23 @@ export default function Room() {
   ])
 
   return (
+    <>
+    <Dialog open={needsName && isValidUUID(rId.trim())} onOpenChange={(open) => { if (!open) navigate({ to: "/" }) }}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Join this room</DialogTitle>
+          <DialogDescription>Choose the name others will see before you connect.</DialogDescription>
+        </DialogHeader>
+        <form className="space-y-5" onSubmit={(event) => {
+          event.preventDefault()
+          if (!joinName.trim()) { setNameError("Enter your name or generate one."); return }
+          initializeUser(joinName, rId)
+        }}>
+          <NameField id="join-name" value={joinName} onChange={(value) => { setJoinName(value); setNameError("") }} error={nameError} />
+          <Button type="submit" className="w-full">Join room</Button>
+        </form>
+      </DialogContent>
+    </Dialog>
     <SidebarProvider>
       <Sidebar
         side="left"
@@ -488,5 +504,6 @@ export default function Room() {
         </div>
       </main>
     </SidebarProvider>
+    </>
   )
 }

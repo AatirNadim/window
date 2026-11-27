@@ -23,7 +23,9 @@
       "sizes": "512x512"
     }
   ],
+  "id": "/",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "theme_color": "#176b47",
   "background_color": "#f4f6f4"

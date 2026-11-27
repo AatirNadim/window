@@ -35,9 +35,16 @@ export function ThemeProvider({
   storageKey = "vite-ui-theme",
   ...props
 }: ThemeProviderProps) {
-  const [theme, setTheme] = useState<Theme>(
-    () => (localStorage.getItem(storageKey) as Theme) || defaultTheme,
-  )
+  const [theme, setTheme] = useState<Theme>(() => {
+    try {
+      const savedTheme = localStorage.getItem(storageKey)
+      return savedTheme === "light" || savedTheme === "dark" || savedTheme === "system"
+        ? savedTheme
+        : defaultTheme
+    } catch {
+      return defaultTheme
+    }
+  })
   const [systemTheme, setSystemTheme] = useState<ResolvedTheme>(getSystemTheme)
 
   useEffect(() => {
@@ -60,7 +67,11 @@ export function ThemeProvider({
     theme,
     resolvedTheme,
     setTheme: (nextTheme: Theme) => {
-      localStorage.setItem(storageKey, nextTheme)
+      try {
+        localStorage.setItem(storageKey, nextTheme)
+      } catch {
+        // The theme still works for this session if storage is unavailable.
+      }
       setTheme(nextTheme)
     },
   }
